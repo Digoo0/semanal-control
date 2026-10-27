@@ -1,23 +1,11 @@
 import {calculate, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS} from './budget.js';
-import {firebaseConfig} from './firebase-config.js';
 
 const $ = selector => document.querySelector(selector);
-const LOCAL_KEY = 'semana:local:v1';
-const CONFIG_KEY = 'semana:firebase:v1';
 const money = cents => (cents / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 const shortDate = key => parseDate(key).toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}).replace('.', '');
 const escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-let cloud = null, filter = 'all', busy = false, toastTimer;
-let startupError = '';
-function readLocal() {
-  try {
-    const raw = localStorage.getItem(LOCAL_KEY);
-    return raw ? validateState(JSON.parse(raw)) : newState();
-  } catch { startupError = 'Não foi possível ler os dados locais. O arquivo original foi preservado. Importe um backup ou verifique o armazenamento do navegador.'; return null; }
-}
-let state = readLocal();
-let localBroken = !state;
-state ||= newState();
+let cloud = null, filter = 'all', busy = false, toastTimer, unsubscribeAuth;
+let state = newState(), creatingAccount = false;
 function toast(message) {
   $('#toast').textContent = message;
   $('#toast').classList.add('visible');
@@ -44,19 +32,17 @@ function download(data, name = `semana-backup-${dateKey()}.json`) {
 }
 async function commit(next) {
   if (busy) throw new Error('Aguarde a operação atual terminar.');
-  if (localBroken && !cloud) throw new Error('O armazenamento local precisa ser recuperado antes de salvar. Exporte ou recupere seus dados primeiro.');
+  if (!cloud) throw new Error('Entre na sua conta para salvar seu planejamento.');
   validateState(next);
   busy = true;
   try {
-    if (cloud) {
-      setStatus('Salvando na nuvem…');
-      await cloud.save(next);
-      // A local cache is best-effort; a successful remote commit must not be retried.
-      try { localStorage.setItem(`semana:cloud:${cloud.uid}`, JSON.stringify(next)); } catch {}
-    } else localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
+    const adapter = cloud;
+    setStatus('Salvando na nuvem…');
+    await adapter.save(next);
+    if (cloud !== adapter) throw new Error('Sua sessão foi encerrada. Entre novamente.');
     state = next; render();
   } catch (error) {
-    setStatus(cloud ? 'Falha ao sincronizar' : 'Falha ao salvar', true);
+    setStatus('Falha ao sincronizar', true);
     throw new Error(error.code ? friendlyError(error) : error.message || 'Não foi possível salvar.');
   } finally { busy = false; }
 }
@@ -75,9 +61,9 @@ function render() {
   $('#payday-label').textContent = parseDate(budget.payday).toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
   const days = Math.round((Date.UTC(...budget.payday.split('-').map((n, i) => Number(n) - (i === 1 ? 1 : 0))) - Date.UTC(...today.split('-').map((n, i) => Number(n) - (i === 1 ? 1 : 0)))) / 86400000);
   $('#payday-count').textContent = `Falta${days === 1 ? '' : 'm'} ${days} dia${days === 1 ? '' : 's'}`;
-  setStatus(cloud ? 'Salvo na sua conta' : 'Salvo neste dispositivo');
+  setStatus(cloud ? 'Salvo na sua conta' : 'Entre na sua conta');
   $('#account-label').textContent = cloud ? cloud.email : 'Espaço pessoal';
-  $('#footer-storage').textContent = cloud ? 'Seus dados sincronizados com Firebase.' : 'Seus dados ficam neste navegador.';
+  $('#footer-storage').textContent = 'Seu planejamento salvo na sua conta.';
   renderTransactions();
 }
 function renderTransactions() {
@@ -125,17 +111,43 @@ function askConfirmation(title, message) {
   });
 }
 function friendlyError(error) {
-  const messages = {'auth/invalid-credential':'E-mail ou senha inválidos.','auth/email-already-in-use':'Este e-mail já tem uma conta. Desmarque a opção de criar conta.','auth/operation-not-allowed':'Habilite o acesso por e-mail e senha no Firebase Authentication.','auth/unauthorized-domain':'Autorize o domínio deste site no Firebase Authentication.','auth/network-request-failed':'Não foi possível conectar. Verifique sua internet.','auth/too-many-requests':'Muitas tentativas. Aguarde um pouco e tente novamente.','permission-denied':'Acesso negado. Publique as regras do arquivo firestore.rules no seu projeto.','unavailable':'Firebase indisponível. Tente novamente quando estiver conectado.'};
+  const messages = {'auth/invalid-credential':'E-mail ou senha inválidos.','auth/invalid-email':'Informe um e-mail válido.','auth/user-not-found':'E-mail ou senha inválidos.','auth/wrong-password':'E-mail ou senha inválidos.','auth/email-already-in-use':'Este e-mail já tem uma conta. Selecione Entrar.','auth/weak-password':'Use uma senha com pelo menos 6 caracteres.','auth/operation-not-allowed':'O acesso por e-mail e senha ainda precisa ser habilitado no Firebase Authentication.','auth/configuration-not-found':'O acesso ainda precisa ser configurado no Firebase Authentication.','auth/unauthorized-domain':'O domínio deste site ainda precisa ser autorizado no Firebase Authentication.','auth/network-request-failed':'Não foi possível conectar. Verifique sua internet.','auth/too-many-requests':'Muitas tentativas. Aguarde um pouco e tente novamente.','permission-denied':'Não foi possível acessar seus dados. Confira as regras do Firestore no projeto Firebase.','unavailable':'Firebase indisponível. Tente novamente quando estiver conectado.'};
   return messages[error.code] || error.message || 'Não foi possível conectar ao Firebase.';
 }
-async function activateCloud(adapter, interactive = false) {
+async function activateCloud(adapter) {
   const remote = await adapter.load();
   if (remote) validateState(remote);
-  if (interactive && remote && (state.initialized || state.transactions.length)) download(state, `semana-antes-da-conexao-${dateKey()}.json`);
-  if (!remote) await adapter.save(state);
-  cloud = adapter; state = remote || state;
-  try { localStorage.setItem(CONFIG_KEY, firebaseConfig.projectId); } catch {}
+  const accountState = remote || newState();
+  if (!remote) await adapter.save(accountState);
+  cloud = adapter; state = accountState;
+  unsubscribeAuth?.();
+  unsubscribeAuth = adapter.onSignedOut(showLogin);
   render();
+  $('#login-screen').hidden = true;
+  $('#app-sidebar').hidden = false;
+  $('#overview').hidden = false;
+  document.body.dataset.auth = 'authenticated';
+  document.title = 'Semana · Seu dinheiro, no seu ritmo';
+}
+function showLogin() {
+  unsubscribeAuth?.(); unsubscribeAuth = undefined;
+  cloud = null; state = newState();
+  filter = 'all'; $('#search').value = '';
+  document.querySelectorAll('[data-filter]').forEach(button => button.classList.toggle('selected', button.dataset.filter === 'all'));
+  setLoginMode(false);
+  document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+  $('#app-sidebar').hidden = true; $('#overview').hidden = true;
+  $('#login-screen').hidden = false;
+  document.body.dataset.auth = 'signed-out';
+  document.title = 'Entrar · Semana';
+  $('#login-status').textContent = '';
+  $('#login-form').elements.password.value = '';
+  $('#transaction-form').reset(); $('#settings-form').reset();
+  render();
+}
+function loginBusy(value) {
+  $('#login-form').querySelectorAll('input,button').forEach(element => element.disabled = value);
+  $('#login-toggle').disabled = value;
 }
 $('#new-transaction').onclick = () => transactionDialog();
 $('#empty-add').onclick = () => transactionDialog();
@@ -192,54 +204,70 @@ $('#import-input').onchange = async event => {
     if (file.size > 5_000_000) throw new Error('O arquivo deve ter no máximo 5 MB.');
     const imported = validateState(JSON.parse(await file.text()));
     if (!await askConfirmation('Restaurar backup?', 'Os dados atuais serão exportados como backup e substituídos pelos dados deste arquivo.')) return;
-    download(localBroken ? {original: localStorage.getItem(LOCAL_KEY)} : state, `semana-antes-da-importacao-${dateKey()}.json`);
-    const wasBroken = localBroken;
-    localBroken = false;
-    try { await commit(imported); } catch (error) { localBroken = wasBroken; throw error; }
+    download(state, `semana-antes-da-importacao-${dateKey()}.json`);
+    await commit(imported);
     $('#settings-dialog').close(); toast('Backup restaurado.');
   } catch (error) { toast(error.message || 'Arquivo inválido.'); }
   finally { event.target.value = ''; }
 };
-function cloudDialog() {
-  $('#settings-dialog').close();
-  const form = $('#cloud-form'); form.hidden = !!cloud;
-  $('#disconnect-button').hidden = !cloud;
-  openDialog('#cloud-dialog');
-}
-$('#cloud-button').onclick = cloudDialog;
-$('#sync-button').onclick = cloudDialog;
-$('#cloud-form').onsubmit = async event => {
-  event.preventDefault(); const form = event.currentTarget, button = form.querySelector('[type=submit]'); button.disabled = true;
+$('#login-form').onsubmit = async event => {
+  event.preventDefault();
+  if (busy) return;
+  const form = event.currentTarget;
+  busy = true; loginBusy(true);
+  form.querySelector('.form-error').textContent = '';
+  $('#login-status').textContent = creatingAccount ? 'Criando sua conta…' : 'Entrando na sua conta…';
   try {
     const {connectCloud} = await import('./cloud.js');
-    const adapter = await connectCloud({email:form.elements.email.value.trim(), password:form.elements.password.value, createAccount:form.elements.createAccount.checked});
-    await activateCloud(adapter, true);
-    form.elements.password.value = ''; $('#cloud-dialog').close(); toast('Conectado. Suas alterações serão salvas no Firebase.');
-  } catch (error) { form.querySelector('.form-error').textContent = friendlyError(error); }
-  finally { button.disabled = false; }
+    const adapter = await connectCloud({email:form.elements.email.value.trim(), password:form.elements.password.value, createAccount:creatingAccount});
+    await activateCloud(adapter);
+    form.elements.password.value = ''; $('#login-status').textContent = '';
+  } catch (error) { $('#login-status').textContent = ''; form.querySelector('.form-error').textContent = friendlyError(error); }
+  finally { busy = false; loginBusy(false); }
 };
-$('#disconnect-button').onclick = async () => {
+function setLoginMode(create) {
+  creatingAccount = create;
+  $('#login-heading').textContent = creatingAccount ? 'Vamos começar?' : 'Bom ter você por aqui.';
+  $('#login-subtitle').textContent = creatingAccount ? 'Crie sua conta e dê o primeiro passo para se organizar.' : 'Entre na sua conta para organizar a próxima semana.';
+  $('#login-submit').innerHTML = creatingAccount ? 'Criar minha conta <span aria-hidden="true">↗</span>' : 'Entrar na minha conta <span aria-hidden="true">↗</span>';
+  $('#signup-prompt').textContent = creatingAccount ? 'Já tem uma conta?' : 'Ainda não tem uma conta?';
+  $('#login-toggle').textContent = creatingAccount ? 'Entrar' : 'Criar conta';
+  $('#login-form').elements.password.autocomplete = creatingAccount ? 'new-password' : 'current-password';
+  $('#reset-password').hidden = creatingAccount;
+  $('#login-form .form-error').textContent = ''; $('#login-status').textContent = '';
+}
+$('#login-toggle').onclick = () => setLoginMode(!creatingAccount);
+$('#reset-password').onclick = async () => {
+  const form = $('#login-form');
+  if (!form.elements.email.reportValidity() || busy) return;
+  busy = true; loginBusy(true);
+  form.querySelector('.form-error').textContent = ''; $('#login-status').textContent = 'Solicitando recuperação de senha…';
+  try {
+    const {resetPassword} = await import('./cloud.js');
+    await resetPassword(form.elements.email.value.trim());
+    $('#login-status').textContent = 'Se houver uma conta com esse e-mail, você receberá as instruções para redefinir a senha.';
+  } catch (error) { $('#login-status').textContent = ''; form.querySelector('.form-error').textContent = friendlyError(error); }
+  finally { busy = false; loginBusy(false); }
+};
+$('#logout-button').onclick = async () => {
   if (busy) return toast('Aguarde o salvamento terminar.');
+  busy = true; $('#logout-button').disabled = true;
   try {
-    await cloud.disconnect(); cloud = null; localStorage.removeItem(CONFIG_KEY);
-    state = readLocal() || newState(); $('#cloud-dialog').close(); render(); toast('Você voltou aos dados locais deste dispositivo.');
+    await cloud.disconnect(); showLogin();
   } catch (error) { toast(friendlyError(error)); }
+  finally { busy = false; $('#logout-button').disabled = false; }
 };
-render();
-if (startupError) { setStatus('Verifique os dados locais', true); toast(startupError); }
 let lastDay = dateKey();
-setInterval(() => { if (dateKey() !== lastDay) { lastDay = dateKey(); render(); } }, 30000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+setInterval(() => { if (cloud && dateKey() !== lastDay) { lastDay = dateKey(); render(); } }, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && cloud) render(); });
 async function resumeCloud() {
+  busy = true; loginBusy(true);
   try {
-    const raw = localStorage.getItem(CONFIG_KEY); if (raw !== firebaseConfig.projectId) return;
-    busy = true; setStatus('Conectando ao Firebase…');
-    document.querySelectorAll('#new-transaction,#initial-button,#settings-button,#payday-button,#empty-add,#sync-button').forEach(b => b.disabled = true);
     const {connectCloud} = await import('./cloud.js');
     const adapter = await connectCloud();
     if (adapter) await activateCloud(adapter);
-    else { setStatus('Sessão encerrada · dados locais'); toast('Entre novamente no Firebase para acessar os dados da sua conta.'); }
-  } catch (error) { setStatus('Nuvem indisponível · dados locais', true); toast(friendlyError(error)); }
-  finally { busy = false; document.querySelectorAll('#new-transaction,#initial-button,#settings-button,#payday-button,#empty-add,#sync-button').forEach(b => b.disabled = false); }
+    else showLogin();
+  } catch (error) { showLogin(); $('#login-form .form-error').textContent = friendlyError(error); }
+  finally { busy = false; loginBusy(false); }
 }
 resumeCloud();

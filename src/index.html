@@ -6,8 +6,30 @@
   <title>Semana · Seu dinheiro, no seu ritmo</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
 </head>
-<body>
-  <aside class="sidebar">
+<body data-auth="checking">
+  <section id="login-screen" class="login-shell" aria-labelledby="login-heading">
+    <div class="login-story">
+      <a class="brand" href="./"><span class="brand-mark">s<span>·</span></span>semana<span class="brand-dot">.</span></a>
+      <div class="login-message"><p class="eyebrow">UM PASSO DE CADA VEZ</p><h1>Seu dinheiro.<br> Sua semana.<br> Mais tranquilidade<span>.</span></h1><p>Saiba quanto você pode gastar hoje, sem perder de vista o amanhã.</p><div class="login-illustration" aria-hidden="true"><div><span>semana 1</span><i></i></div><div><span>semana 2</span><i></i></div><div><span>semana 3</span><i></i></div><div><span>semana 4</span><i></i></div></div></div>
+      <span class="login-story-footer">Pequenos registros. Grandes mudanças.</span>
+    </div>
+    <div class="login-content">
+      <div class="login-card"><p class="eyebrow">BEM-VINDO AO SEU ESPAÇO</p><h2 id="login-heading">Bom ter você por aqui.</h2><p class="login-subtitle" id="login-subtitle">Entre na sua conta para organizar a próxima semana.</p>
+        <form id="login-form">
+          <label>E-mail<input name="email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required maxlength="254"></label>
+          <label>Senha<input name="password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="6" required maxlength="128"></label>
+          <div class="login-options"><span>Seu planejamento em um só lugar.</span><button class="text-button" id="reset-password" type="button" disabled>Esqueci minha senha</button></div>
+          <button class="button primary full" id="login-submit" type="submit" disabled>Entrar na minha conta <span aria-hidden="true">↗</span></button>
+          <p id="login-status" class="login-status" role="status" aria-live="polite">Verificando sua sessão…</p><p class="form-error" role="alert"></p>
+        </form>
+        <div class="login-signup"><span id="signup-prompt">Ainda não tem uma conta?</span><button id="login-toggle" class="text-button" disabled>Criar conta</button></div>
+        <p class="login-privacy">Seu planejamento é pessoal.<br>Somente sua conta tem acesso aos seus dados.</p>
+      </div>
+      <span class="login-footer">Feito para simplificar sua vida financeira.</span>
+    </div>
+  </section>
+  <noscript><p class="noscript-message">Ative o JavaScript no navegador para acessar sua conta.</p></noscript>
+  <aside class="sidebar" id="app-sidebar" hidden>
     <a class="brand" href="#overview"><span class="brand-mark">s<span>·</span></span>semana<span class="brand-dot">.</span></a>
     <div class="workspace-label">SEU ESPAÇO FINANCEIRO</div>
     <nav aria-label="Navegação principal">
@@ -18,8 +40,8 @@
     <div class="sidebar-note"><span class="note-icon">↗</span><h3>Um passo de cada vez.</h3><p>Organize a semana de hoje.<br>Cuide do seu amanhã.</p><div class="note-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
     <div class="sidebar-bottom"><span class="avatar">V</span><div><strong>Suas finanças</strong><small id="account-label">Espaço pessoal</small></div><span class="tiny-dot"></span></div>
   </aside>
-  <main id="overview">
-    <header class="topbar"><span class="breadcrumb">Meu espaço <span>/</span> <strong>Visão geral</strong></span><button id="sync-button" class="storage-status"><span class="tiny-dot"></span><span id="sync-label">Salvo neste dispositivo</span></button></header>
+  <main id="overview" hidden>
+    <header class="topbar"><span class="breadcrumb">Meu espaço <span>/</span> <strong>Visão geral</strong></span><div class="account-actions"><span class="storage-status"><span class="tiny-dot"></span><span id="sync-label">Salvo na sua conta</span></span><button id="logout-button" class="text-button">Sair da conta ↗</button></div></header>
     <div class="page-content">
       <section class="page-heading"><div><p class="eyebrow" id="today-label"></p><h1>Mais clareza. Menos aperto<span>.</span></h1><p>Seu dinheiro organizado, uma semana de cada vez.</p></div><button class="button primary" id="new-transaction"><span aria-hidden="true">＋</span> Nova movimentação</button></section>
       <section class="welcome-strip" id="welcome-strip"><div><strong>Vamos começar pelo que você tem hoje?</strong><p>Informe seu saldo disponível. A gente cuida da divisão.</p></div><button class="button" id="initial-button">Definir meu saldo <span aria-hidden="true">↗</span></button></section>
@@ -37,8 +59,7 @@
     </div>
   </main>
   <dialog id="transaction-dialog"><form id="transaction-form"><div class="modal-heading"><h2 id="transaction-title">Nova movimentação</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><input name="id" type="hidden"><div class="type-picker"><label><input type="radio" name="type" value="expense" checked> ↗ Saída</label><label><input type="radio" name="type" value="income"> ↙ Entrada</label></div><label>Valor (R$)<input name="amount" type="text" inputmode="decimal" placeholder="0,00" required maxlength="16" autocomplete="off"></label><label>Descrição<input name="description" placeholder="Ex.: Mercado da semana" maxlength="100" required></label><div class="form-grid"><label>Categoria<select name="category"><option>Alimentação</option><option>Transporte</option><option>Casa</option><option>Lazer</option><option>Saúde</option><option>Salário</option><option>Outros</option></select></label><label>Data<input type="date" name="date" required></label></div><p class="form-hint">Entradas redistribuem o saldo. Saídas reduzem a semana em que aconteceram.</p><button class="button primary full" type="submit">Salvar movimentação</button><p class="form-error" role="alert"></p></form></dialog>
-  <dialog id="settings-dialog"><div class="modal-heading"><h2>Seu planejamento</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><form id="settings-form"><label>Saldo disponível ao começar (R$)<input name="balance" type="text" inputmode="decimal" required maxlength="16"></label><p class="form-hint" id="balance-hint"></p><label>Próximo recebimento<input type="date" name="payday" required></label><p class="form-hint">As semanas começam na segunda-feira. A semana atual e a última podem ser mais curtas, mas recebem uma parte igual. O salário só entra no saldo quando você registrar uma entrada.</p><button class="button primary full" type="submit">Salvar planejamento</button><p class="form-error" role="alert"></p></form><div class="settings-extra"><button class="text-button" id="cloud-button">☁ Conectar ao Firebase</button><label class="text-button import-label">↑ Importar backup<input type="file" id="import-input" accept="application/json,.json" hidden></label></div></dialog>
-  <dialog id="cloud-dialog"><div class="modal-heading"><h2>Acesse sua conta</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><p class="form-hint">Entre para salvar seu planejamento e acessar suas finanças em outros dispositivos.</p><form id="cloud-form"><label>E-mail<input name="email" type="email" autocomplete="username" required></label><label>Senha<input name="password" type="password" autocomplete="current-password" minlength="6" required></label><label class="checkbox-label"><input name="createAccount" type="checkbox"> Criar uma nova conta</label><p class="form-hint">Se a conta já tiver dados, eles serão usados neste dispositivo. Seu saldo local atual será baixado como backup antes da troca.</p><button class="button primary full" type="submit">Entrar na minha conta</button><p class="form-error" role="alert"></p></form><button class="text-button" id="disconnect-button" hidden>Sair da conta e voltar aos dados locais</button></dialog>
+  <dialog id="settings-dialog"><div class="modal-heading"><h2>Seu planejamento</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><form id="settings-form"><label>Saldo disponível ao começar (R$)<input name="balance" type="text" inputmode="decimal" required maxlength="16"></label><p class="form-hint" id="balance-hint"></p><label>Próximo recebimento<input type="date" name="payday" required></label><p class="form-hint">As semanas começam na segunda-feira. A semana atual e a última podem ser mais curtas, mas recebem uma parte igual. O salário só entra no saldo quando você registrar uma entrada.</p><button class="button primary full" type="submit">Salvar planejamento</button><p class="form-error" role="alert"></p></form><div class="settings-extra"><span class="form-hint">Salvo na sua conta.</span><label class="text-button import-label">↑ Importar backup<input type="file" id="import-input" accept="application/json,.json" hidden></label></div></dialog>
   <dialog id="info-dialog"><div class="modal-heading"><h2>Uma semana de cada vez</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><p>Com R$ 400 e quatro semanas até receber, você começa com R$ 100 por semana.</p><p>Gastou R$ 50? A semana atual fica com R$ 50 e as outras continuam com R$ 100.</p><p>Na segunda-feira seguinte, os R$ 350 que sobraram são divididos nas três semanas restantes: R$ 116,67, R$ 116,67 e R$ 116,66.</p><p class="form-hint">Os cálculos usam centavos inteiros. Se você ultrapassar o limite semanal, ele aparece negativo. Na próxima semana, o saldo total é redistribuído.</p></dialog>
   <dialog id="confirm-dialog"><div class="modal-heading"><h2 id="confirm-title">Confirmar alteração</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><p id="confirm-message"></p><div class="confirm-actions"><button class="button" id="confirm-cancel">Cancelar</button><button class="button primary" id="confirm-ok">Confirmar</button></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>

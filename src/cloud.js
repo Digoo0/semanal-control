@@ -1,5 +1,5 @@
 // This module and the npm SDK are loaded only when cloud sync is used.
-import { getAuth, setPersistence, browserSessionPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getAuth, setPersistence, browserSessionPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore/lite';
 import { app } from './firebase.js';
 
@@ -35,6 +35,11 @@ export async function connectCloud(credentials) {
       });
       revision = nextRevision;
     },
-    async disconnect() { await signOut(auth); }
+    async disconnect() { await signOut(auth); },
+    onSignedOut(callback) { return onAuthStateChanged(auth, current => { if (!current) callback(); }); }
   };
+}
+
+export async function resetPassword(email) {
+  await sendPasswordResetEmail(getAuth(app), email);
 }
