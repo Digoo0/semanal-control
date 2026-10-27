@@ -1,4 +1,4 @@
-import {calculate, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS} from './budget.js';
+import {calculate, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS, MAX_SCHEDULE_DAYS} from './budget.js';
 
 const $ = selector => document.querySelector(selector);
 const money = cents => (cents / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -57,7 +57,11 @@ function render() {
   $('#welcome-strip').hidden = state.initialized;
   $('#week-count').textContent = `${budget.periods.length} ${budget.periods.length === 1 ? 'semana' : 'semanas'}`;
   const maximum = Math.max(...budget.periods.map(w => w.amount), 1);
-  $('#weeks').innerHTML = budget.periods.map((week, index) => `<div class="week-card ${index === 0 ? 'current' : ''}"><div class="week-title">${index === 0 ? '<span class="tiny-dot"></span> Semana atual' : `Semana ${index + 1}`}</div><div class="week-date">${shortDate(week.start)} – ${shortDate(week.end)}</div><div class="week-amount ${week.amount < 0 ? 'negative' : ''}">${escapeHtml(money(week.amount))}</div><div class="week-bar"><i style="width:${Math.max(0, Math.min(100, week.amount / maximum * 100))}%"></i></div><div class="week-foot">${index === 0 ? week.amount < 0 ? 'Limite ultrapassado' : 'Disponível para usar' : 'Reservado para depois'}</div></div>`).join('');
+  $('#weeks').innerHTML = budget.periods.map((week, index) => {
+    const planned = state.transactions.filter(t => t.date > today && t.date >= week.start && t.date <= week.end).length;
+    const detail = planned ? `Previsto · ${planned} agendado${planned === 1 ? '' : 's'}` : index === 0 ? week.amount < 0 ? 'Limite ultrapassado' : 'Disponível para usar' : 'Reservado para depois';
+    return `<div class="week-card ${index === 0 ? 'current' : ''}"><div class="week-title">${index === 0 ? '<span class="tiny-dot"></span> Semana atual' : `Semana ${index + 1}`}</div><div class="week-date">${shortDate(week.start)} – ${shortDate(week.end)}</div><div class="week-amount ${week.amount < 0 ? 'negative' : ''}">${escapeHtml(money(week.amount))}</div><div class="week-bar"><i style="width:${Math.max(0, Math.min(100, week.amount / maximum * 100))}%"></i></div><div class="week-foot ${planned ? 'scheduled-text' : ''}">${detail}</div></div>`;
+  }).join('');
   $('#payday-label').textContent = parseDate(budget.payday).toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
   const days = Math.round((Date.UTC(...budget.payday.split('-').map((n, i) => Number(n) - (i === 1 ? 1 : 0))) - Date.UTC(...today.split('-').map((n, i) => Number(n) - (i === 1 ? 1 : 0)))) / 86400000);
   $('#payday-count').textContent = `Falta${days === 1 ? '' : 'm'} ${days} dia${days === 1 ? '' : 's'}`;
@@ -69,7 +73,7 @@ function render() {
 function renderTransactions() {
   const search = $('#search').value.trim().toLocaleLowerCase('pt-BR');
   const items = state.transactions.map((t, index) => ({...t, index})).filter(t => (filter === 'all' || filter === t.type) && `${t.description} ${t.category}`.toLocaleLowerCase('pt-BR').includes(search)).sort((a, b) => b.date.localeCompare(a.date) || b.index - a.index);
-  $('#transaction-rows').innerHTML = items.map(t => `<tr><td><div class="entry-name"><span class="entry-icon ${t.type}" aria-hidden="true">${t.type === 'income' ? '↙' : '↗'}</span><span title="${escapeHtml(t.description)}">${escapeHtml(t.description)}</span></div></td><td><span class="category-pill">${escapeHtml(t.category)}</span></td><td>${parseDate(t.date).toLocaleDateString('pt-BR')}</td><td class="amount-column ${t.type === 'income' ? 'income-amount' : ''}">${t.type === 'income' ? '+' : '−'} ${escapeHtml(money(t.amount))}</td><td class="row-actions"><button class="row-action" data-edit="${escapeHtml(t.id)}" aria-label="Editar ${escapeHtml(t.description)}" title="Editar">✎</button><button class="row-action" data-delete="${escapeHtml(t.id)}" aria-label="Excluir ${escapeHtml(t.description)}" title="Excluir">×</button></td></tr>`).join('');
+  $('#transaction-rows').innerHTML = items.map(t => { const scheduled = t.date > dateKey(); return `<tr><td><div class="entry-name"><span class="entry-icon ${t.type}" aria-hidden="true">${t.type === 'income' ? '↙' : '↗'}</span><span title="${escapeHtml(t.description)}">${escapeHtml(t.description)}</span></div></td><td><span class="category-pill">${escapeHtml(t.category)}</span></td><td>${parseDate(t.date).toLocaleDateString('pt-BR')}${scheduled ? ' <span class="scheduled-pill">Agendado</span>' : ''}</td><td class="amount-column ${t.type === 'income' ? 'income-amount' : ''}">${t.type === 'income' ? '+' : '−'} ${escapeHtml(money(t.amount))}</td><td class="row-actions"><button class="row-action" data-edit="${escapeHtml(t.id)}" aria-label="Editar ${escapeHtml(t.description)}" title="Editar">✎</button><button class="row-action" data-delete="${escapeHtml(t.id)}" aria-label="Excluir ${escapeHtml(t.description)}" title="Excluir">×</button></td></tr>`; }).join('');
   $('#transaction-count').textContent = `${items.length} ${items.length === 1 ? 'movimentação' : 'movimentações'}`;
   $('#empty-state').hidden = items.length > 0;
   $('#empty-state h3').textContent = state.transactions.length ? 'Nenhuma movimentação encontrada' : 'Aqui começa sua organização';
@@ -79,15 +83,21 @@ function openDialog(id) { const dialog = $(id); dialog.querySelectorAll('.form-e
 function transactionDialog(id) {
   const form = $('#transaction-form'); form.reset();
   form.elements.id.value = '';
-  form.elements.date.min = state.startedOn; form.elements.date.max = dateKey(); form.elements.date.value = dateKey();
+  form.elements.date.min = state.startedOn; form.elements.date.max = addDays(dateKey(), MAX_SCHEDULE_DAYS); form.elements.date.value = dateKey();
   const transaction = state.transactions.find(t => t.id === id);
   if (transaction) {
     for (const field of ['id','type','description','category','date']) form.elements[field].value = transaction[field];
     form.elements.amount.value = (transaction.amount / 100).toFixed(2).replace('.', ',');
   }
   $('#transaction-title').textContent = transaction ? 'Editar movimentação' : 'Nova movimentação';
+  updateDateHint(form.elements.date.value);
   openDialog('#transaction-dialog');
   form.elements.amount.focus();
+}
+function updateDateHint(date) {
+  $('#transaction-date-hint').textContent = date > dateKey()
+    ? 'Lançamento agendado. Ele não altera seu saldo disponível até a data escolhida; até lá, aparece como previsão da semana.'
+    : 'Entradas redistribuem o saldo. Saídas reduzem a semana em que aconteceram.';
 }
 function settingsDialog() {
   const form = $('#settings-form');
@@ -143,6 +153,7 @@ function showLogin() {
   $('#login-status').textContent = '';
   $('#login-form').elements.password.value = '';
   $('#transaction-form').reset(); $('#settings-form').reset();
+  updateDateHint(dateKey());
   render();
 }
 function loginBusy(value) {
@@ -162,12 +173,14 @@ document.querySelectorAll('[data-filter]').forEach(button => button.onclick = ()
   document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('selected', b === button)); renderTransactions();
 });
 $('#search').addEventListener('input', renderTransactions);
+$('#transaction-form').elements.date.addEventListener('input', event => updateDateHint(event.target.value));
 document.querySelectorAll('a.nav-link').forEach(link => link.onclick = () => document.querySelectorAll('a.nav-link').forEach(l => l.classList.toggle('active', l === link)));
 $('#transaction-form').onsubmit = async event => {
   event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('[type=submit]'); button.disabled = true;
   try {
     const data = new FormData(form), id = data.get('id') || crypto.randomUUID();
     const entry = {id, type:data.get('type'), description:data.get('description').trim(), category:data.get('category'), date:data.get('date'), amount:parseMoney(data.get('amount'))};
+    if (entry.date < state.startedOn || entry.date > addDays(dateKey(), MAX_SCHEDULE_DAYS)) throw new Error('A data deve estar entre o início do histórico e os próximos 10 anos.');
     const next = structuredClone(state), existing = next.transactions.findIndex(t => t.id === id);
     if (existing >= 0) next.transactions[existing] = entry; else next.transactions.push(entry);
     next.initialized = true;

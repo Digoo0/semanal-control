@@ -1,4 +1,5 @@
 export const MAX_CENTS = 100_000_000_000;
+export const MAX_SCHEDULE_DAYS = 3650;
 export function dateKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -52,7 +53,7 @@ export function validateState(state, today = dateKey()) {
   for (const t of state.transactions) {
     if (typeof t.id !== 'string' || !t.id || ids.has(t.id)) throw new Error('Identificador inválido.');
     ids.add(t.id); parseDate(t.date);
-    if (t.date < state.startedOn || t.date > today || !['income', 'expense'].includes(t.type) || !Number.isSafeInteger(t.amount) || t.amount <= 0 || t.amount > MAX_CENTS || typeof t.description !== 'string' || !t.description.trim() || t.description.length > 100 || !['Alimentação', 'Transporte', 'Casa', 'Lazer', 'Saúde', 'Salário', 'Outros'].includes(t.category)) throw new Error('Lançamento inválido.');
+    if (t.date < state.startedOn || t.date > addDays(today, MAX_SCHEDULE_DAYS) || !['income', 'expense'].includes(t.type) || !Number.isSafeInteger(t.amount) || t.amount <= 0 || t.amount > MAX_CENTS || typeof t.description !== 'string' || !t.description.trim() || t.description.length > 100 || !['Alimentação', 'Transporte', 'Casa', 'Lazer', 'Saúde', 'Salário', 'Outros'].includes(t.category)) throw new Error('Lançamento inválido.');
   }
   if (!state.paydayOverrides || typeof state.paydayOverrides !== 'object' || Array.isArray(state.paydayOverrides)) throw new Error('Recebimento inválido.');
   for (const [month, day] of Object.entries(state.paydayOverrides)) {
@@ -80,8 +81,18 @@ export function calculate(state, today = dateKey()) {
     }
   }
   const payday = nextPayday(today, state.paydayOverrides);
-  const periods = periodsBetween(today, payday).map((period, i) => ({...period, amount: allocated[i] ?? 0}));
+  let forecastTotal = total, forecast = [...allocated];
+  for (let day = addDays(today, 1); day < payday; day = addDays(day, 1)) {
+    const date = parseDate(day);
+    if (date.getDay() === 1) forecast = distribute(forecastTotal, forecast.length);
+    for (const t of events.get(day) || []) {
+      forecastTotal += t.type === 'income' ? t.amount : -t.amount;
+      if (t.type === 'income') forecast = distribute(forecastTotal, forecast.length);
+      else forecast[0] -= t.amount;
+    }
+  }
+  const periods = periodsBetween(today, payday).map((period, i) => ({...period, amount: forecast[i] ?? 0}));
   const month = today.slice(0, 7);
-  const monthEntries = state.transactions.filter(t => t.date.startsWith(month));
+  const monthEntries = state.transactions.filter(t => t.date.startsWith(month) && t.date <= today);
   return {total, payday, periods, income: monthEntries.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), expense: monthEntries.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)};
 }

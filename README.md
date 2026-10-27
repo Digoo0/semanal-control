@@ -20,6 +20,7 @@ Há também um teste de interface opcional em `tests/browser-smoke.mjs`: requer 
 - O saldo inicial representa o dinheiro que você já tem ao começar, sem duplicar esse valor como uma entrada.
 - O saldo é dividido igualmente pelas semanas até o próximo recebimento. Semanas começam na segunda-feira; a primeira e a última podem ser parciais e recebem uma parte igual.
 - Uma saída desconta somente da semana em que ocorreu. Uma entrada redistribui o saldo total entre as semanas restantes.
+- Movimentações podem ser agendadas para até 10 anos no futuro. Elas aparecem como **Agendado** no histórico e entram apenas nas divisões semanais previstas; o saldo de hoje e os totais efetivamente recebidos ou pagos só mudam na data do lançamento.
 - Na segunda-feira seguinte, todo o saldo que restou é dividido novamente. O cálculo é reconstruído pelo histórico mesmo que você fique dias sem abrir a aplicação.
 - R$ 400 em quatro semanas → R$ 100 por semana. Gasto de R$ 50 → R$ 50 / R$ 100 / R$ 100 / R$ 100. Na semana seguinte → R$ 116,67 / R$ 116,67 / R$ 116,66.
 - Centavos são inteiros; o excedente de arredondamento vai para as primeiras semanas.
