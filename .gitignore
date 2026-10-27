@@ -1,0 +1,10 @@
+node_modules/
+.npm-cache/
+dist/
+.openai/
+.firebase/
+*.log
+*.zip
+.DS_Store
+.browser-qa/
+qa-*.png
