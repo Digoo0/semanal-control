@@ -84,7 +84,7 @@ export function calculate(state, today = dateKey()) {
   let forecastTotal = total, forecast = [...allocated];
   for (let day = addDays(today, 1); day < payday; day = addDays(day, 1)) {
     const date = parseDate(day);
-    if (date.getDay() === 1) forecast = distribute(forecastTotal, forecast.length);
+    if (date.getDay() === 1) forecast = distribute(forecastTotal, periodsBetween(day, payday).length);
     for (const t of events.get(day) || []) {
       forecastTotal += t.type === 'income' ? t.amount : -t.amount;
       if (t.type === 'income') forecast = distribute(forecastTotal, forecast.length);
