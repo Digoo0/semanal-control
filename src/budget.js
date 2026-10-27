@@ -82,13 +82,15 @@ export function calculate(state, today = dateKey()) {
   }
   const payday = nextPayday(today, state.paydayOverrides);
   let forecastTotal = total, forecast = [...allocated];
+  const forecastPeriods = periodsBetween(today, payday);
   for (let day = addDays(today, 1); day < payday; day = addDays(day, 1)) {
-    const date = parseDate(day);
-    if (date.getDay() === 1) forecast = distribute(forecastTotal, periodsBetween(day, payday).length);
     for (const t of events.get(day) || []) {
       forecastTotal += t.type === 'income' ? t.amount : -t.amount;
       if (t.type === 'income') forecast = distribute(forecastTotal, forecast.length);
-      else forecast[0] -= t.amount;
+      else {
+        const periodIndex = forecastPeriods.findIndex(period => day >= period.start && day <= period.end);
+        if (periodIndex >= 0) forecast[periodIndex] -= t.amount;
+      }
     }
   }
   const periods = periodsBetween(today, payday).map((period, i) => ({...period, amount: forecast[i] ?? 0}));
