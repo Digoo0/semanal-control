@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {calculate, distribute, nextPayday, newState, paydayForMonth, periodsBetween, validateState, addDays} from '../src/budget.js';
+import {calculate, distribute, nextPayday, newState, paydayForMonth, periodsBetween, validateState, addDays, MAX_SCHEDULE_DAYS} from '../src/budget.js';
 
 function fixture() { return {...newState('2026-01-05'), initialBalance:40000, initialized:true}; }
 function transaction(amount, type = 'expense', date = '2026-01-06', id = '1') { return {id, amount, type, date, description:'Teste', category:'Outros'}; }
@@ -82,5 +82,6 @@ test('importação rejeita valores fracionários em centavos, datas inválidas e
   state.transactions = [transaction(1.5)]; assert.throws(() => validateState(state, '2026-01-12'));
   state.transactions = [transaction(100, 'expense', '2026-02-30')]; assert.throws(() => validateState(state, '2026-03-01'));
   state.transactions = [transaction(100), transaction(100)]; assert.throws(() => validateState(state, '2026-01-12'));
-  state.transactions = [transaction(100, 'expense', '2026-01-13')]; assert.throws(() => validateState(state, '2026-01-12'));
+  state.transactions = [transaction(100, 'expense', '2026-01-13')]; assert.doesNotThrow(() => validateState(state, '2026-01-12'));
+  state.transactions = [transaction(100, 'expense', addDays('2026-01-12', MAX_SCHEDULE_DAYS + 1))]; assert.throws(() => validateState(state, '2026-01-12'));
 });

@@ -81,7 +81,7 @@ Endereço: **https://digoo0.github.io/semanal-control/**. Os caminhos dos arquiv
 - `scripts/build.mjs`: build estático, com SDK carregado sob demanda.
 - `.github/workflows/pages.yml`: testes, build e publicação no GitHub Pages.
 - `dist/`: arquivos gerados prontos para hospedagem estática.
-- `tests/budget.test.mjs`: testes do cálculo em centavos, datas e histórico.
+- `tests/budget.test.mjs`: testes do cálculo em centavos, datas e histórico, incluindo a janela de 10 anos para agendamentos futuros.
 - `server.mjs`: servidor estático local.
 
 O visual usa fontes do sistema. O SDK Firebase é incluído no build e não depende de imports de uma CDN. O login e as gravações reais precisam ser validados depois de habilitar os serviços e publicar as regras no seu projeto.
