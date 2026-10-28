@@ -1,10 +1,10 @@
-import {calculate, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS, MAX_SCHEDULE_DAYS} from './budget.js';
+import {calculate, projectPeriods, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS, MAX_SCHEDULE_DAYS} from './budget.js';
 
 const $ = selector => document.querySelector(selector);
 const money = cents => (cents / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 const shortDate = key => parseDate(key).toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}).replace('.', '');
 const escapeHtml = text => String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-let cloud = null, filter = 'all', busy = false, toastTimer, unsubscribeAuth;
+let cloud = null, filter = 'all', forecastUnit = 'weeks', busy = false, toastTimer, unsubscribeAuth;
 let state = newState(), creatingAccount = false;
 function toast(message) {
   $('#toast').textContent = message;
@@ -68,7 +68,22 @@ function render() {
   setStatus(cloud ? 'Salvo na sua conta' : 'Entre na sua conta');
   $('#account-label').textContent = cloud ? cloud.email : 'Espaço pessoal';
   $('#footer-storage').textContent = 'Seu planejamento salvo na sua conta.';
+  renderForecast(today, budget.total);
   renderTransactions();
+}
+function renderForecast(today, total) {
+  const periods = projectPeriods(state, today, forecastUnit, total);
+  const year = parseDate(today).getFullYear();
+  const formatDay = key => parseDate(key).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', ...(parseDate(key).getFullYear() !== year ? {year:'numeric'} : {})});
+  document.querySelectorAll('[data-forecast]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.forecast === forecastUnit)));
+  $('#forecast-periods').innerHTML = periods.map((period, index) => {
+    const title = forecastUnit === 'weeks'
+      ? (index === 0 ? 'Esta semana' : `Semana ${index + 1}`)
+      : parseDate(period.start).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+    const dates = `${formatDay(period.start)} a ${formatDay(period.end)}`;
+    const count = `${period.entries} ${period.entries === 1 ? 'agendamento' : 'agendamentos'}`;
+    return `<article class="forecast-row"><div class="forecast-period"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(dates)} · ${count}</span></div><div class="forecast-flow"><span>Entradas <strong>+ ${escapeHtml(money(period.income))}</strong></span><span>Saídas <strong>− ${escapeHtml(money(period.expense))}</strong></span></div><div class="forecast-balance"><span>Saldo ao final</span><strong class="${period.balance < 0 ? 'negative' : ''}">${escapeHtml(money(period.balance))}</strong></div></article>`;
+  }).join('');
 }
 function renderTransactions() {
   const search = $('#search').value.trim().toLocaleLowerCase('pt-BR');
@@ -143,7 +158,7 @@ async function activateCloud(adapter) {
 function showLogin() {
   unsubscribeAuth?.(); unsubscribeAuth = undefined;
   cloud = null; state = newState();
-  filter = 'all'; $('#search').value = '';
+  filter = 'all'; forecastUnit = 'weeks'; $('#search').value = '';
   document.querySelectorAll('[data-filter]').forEach(button => button.classList.toggle('selected', button.dataset.filter === 'all'));
   setLoginMode(false);
   document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
@@ -175,6 +190,7 @@ document.querySelectorAll('[data-filter]').forEach(button => button.onclick = ()
   document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('selected', b === button)); renderTransactions();
 });
 $('#search').addEventListener('input', renderTransactions);
+document.querySelectorAll('[data-forecast]').forEach(button => button.addEventListener('click', () => { forecastUnit = button.dataset.forecast; render(); }));
 $('#transaction-form').elements.date.addEventListener('input', event => updateDateHint(event.target.value));
 document.querySelectorAll('a.nav-link').forEach(link => link.onclick = () => document.querySelectorAll('a.nav-link').forEach(l => l.classList.toggle('active', l === link)));
 $('#transaction-form').onsubmit = async event => {

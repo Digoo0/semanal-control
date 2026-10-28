@@ -85,3 +85,36 @@ dialog{border-color:#e4e4df;border-radius:12px;box-shadow:0 18px 70px #24252020;
   .table-wrap .row-action{min-width:40px;min-height:40px}
   .mobile-quick-actions{width:100%;left:0;right:0;padding-inline:12px}
 }
+
+.forecast-panel{padding:24px;margin-bottom:18px;scroll-margin-top:18px}
+.forecast-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.forecast-heading h2{font-size:18px;font-weight:570;letter-spacing:-.45px}
+.forecast-heading p{margin:8px 0 0;color:#73746f;font-size:12px;line-height:1.5}
+.forecast-toggle{display:flex;flex-shrink:0;gap:3px;padding:3px;background:#f1f1ee;border-radius:7px}
+.forecast-toggle button{border:0;border-radius:5px;background:transparent;color:#62635e;padding:9px 12px;font-size:12px;min-height:38px}
+.forecast-toggle button[aria-pressed="true"]{background:#fff;color:#292a27;box-shadow:0 1px 3px #00000012;font-weight:600}
+.forecast-note{margin:18px 0;color:#73746f;font-size:11px;line-height:1.6;max-width:75ch}
+.forecast-list{border-top:1px solid #eaeae6}
+.forecast-row{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(220px,1fr) minmax(125px,.65fr);align-items:center;gap:20px;padding:15px 0;border-bottom:1px solid #eaeae6}
+.forecast-period,.forecast-balance{display:flex;flex-direction:column;gap:5px;min-width:0}
+.forecast-period strong{color:#30312d;font-size:13px;font-weight:600;text-transform:capitalize}
+.forecast-period span,.forecast-balance span{color:#777872;font-size:11px;line-height:1.4}
+.forecast-flow{display:flex;justify-content:space-between;gap:12px;color:#777872;font-size:11px}
+.forecast-flow span{display:flex;flex-direction:column;gap:5px;min-width:0}
+.forecast-flow strong{color:#494a45;font-size:12px;font-weight:550;overflow-wrap:anywhere}
+.forecast-balance{text-align:right}
+.forecast-balance strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media(max-width:850px){.forecast-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1.25fr) minmax(90px,.75fr);gap:10px}}
+@media(max-width:620px){
+  .forecast-panel{padding:19px 14px}
+  .forecast-heading{flex-direction:column;gap:14px}
+  .forecast-heading h2{font-size:16px}
+  .forecast-toggle{width:100%}
+  .forecast-toggle button{flex:1;min-height:42px}
+  .forecast-note{margin:15px 0;font-size:11px}
+  .forecast-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 10px;padding:14px 0}
+  .forecast-period{grid-column:1;grid-row:1}
+  .forecast-balance{grid-column:2;grid-row:1}
+  .forecast-flow{grid-column:1/-1;grid-row:2;justify-content:flex-start;gap:26px}
+  .forecast-flow span{min-width:0;max-width:50%}
+}

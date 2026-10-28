@@ -27,7 +27,7 @@ Há também um teste de interface opcional em `tests/browser-smoke.mjs`: requer 
 - O limite da semana pode ficar negativo. Um saldo total negativo não gera reservas positivas após redistribuir.
 - O recebimento previsto é o primeiro dia de segunda a sexta do mês. Feriados **não são consultados automaticamente**: ajuste a data em Configurações. No Brasil, 02/11/2026 é um exemplo de ajuste necessário; informe a data em que seu pagamento realmente cairá.
 - O recebimento previsto não cria uma entrada automática. Registre seu salário quando ele cair.
-- Não há agendamentos futuros. Entradas e saídas representam valores já recebidos ou pagos. Edições e exclusões recalculam o histórico.
+- A área de previsão mostra as próximas oito semanas ou seis meses, a partir do saldo de hoje, somando apenas os lançamentos futuros agendados. Salários e outras movimentações não registradas não são estimados. Edições e exclusões recalculam o histórico e a previsão.
 - Os totais de entradas e saídas são do mês civil atual; o saldo disponível inclui todo o histórico.
 
 ## Login, dados e backup

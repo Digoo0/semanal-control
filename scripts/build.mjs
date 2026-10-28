@@ -26,10 +26,12 @@ await build({
 });
 const [html, css] = await Promise.all(['index.html', 'styles.css'].map(file => readFile(path.join(project, 'src', file), 'utf8')));
 const stylesheet = `assets/styles-${createHash('sha256').update(css).digest('hex').slice(0, 12)}.css`;
+const scriptHash = createHash('sha256').update(await readFile(path.join(output, 'app.js'))).digest('hex').slice(0, 12);
 if (!html.includes('href="./styles.css"')) throw new Error('Referência ao CSS não encontrada no HTML.');
+if (!html.includes('src="./app.js"')) throw new Error('Referência ao aplicativo não encontrada no HTML.');
 await mkdir(path.join(output, 'assets'), {recursive:true});
 await Promise.all([
-  writeFile(path.join(output, 'index.html'), html.replace('href="./styles.css"', `href="./${stylesheet}"`)),
+  writeFile(path.join(output, 'index.html'), html.replace('href="./styles.css"', `href="./${stylesheet}"`).replace('src="./app.js"', `src="./app.js?v=${scriptHash}"`)),
   writeFile(path.join(output, stylesheet), css),
   copyFile(path.join(project, 'src', 'icon.svg'), path.join(output, 'icon.svg'))
 ]);

@@ -98,3 +98,32 @@ export function calculate(state, today = dateKey()) {
   const monthEntries = state.transactions.filter(t => t.date.startsWith(month) && t.date <= today);
   return {total, payday, periods, income: monthEntries.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), expense: monthEntries.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)};
 }
+
+// Project only registered transactions after today; today's movements are already in the balance.
+export function projectPeriods(state, today = dateKey(), unit = 'weeks', currentTotal) {
+  if (!['weeks', 'months'].includes(unit)) throw new Error('Período de previsão inválido.');
+  if (currentTotal === undefined) currentTotal = calculate(state, today).total;
+  const scheduled = state.transactions.filter(t => t.date > today).slice().sort((a, b) => a.date.localeCompare(b.date));
+  const count = unit === 'weeks' ? 8 : 6;
+  const periods = [];
+  let start = today, balance = currentTotal, index = 0;
+  for (let i = 0; i < count; i++) {
+    const date = parseDate(start);
+    const next = unit === 'weeks'
+      ? addDays(start, date.getDay() === 0 ? 1 : 8 - date.getDay())
+      : dateKey(new Date(date.getFullYear(), date.getMonth() + 1, 1, 12));
+    const end = addDays(next, -1);
+    let income = 0, expense = 0, entries = 0;
+    while (index < scheduled.length && scheduled[index].date <= end) {
+      const transaction = scheduled[index++];
+      if (transaction.type === 'income') income += transaction.amount;
+      else expense += transaction.amount;
+      entries++;
+    }
+    const opening = balance;
+    balance += income - expense;
+    periods.push({start, end, opening, income, expense, balance, entries});
+    start = next;
+  }
+  return periods;
+}
