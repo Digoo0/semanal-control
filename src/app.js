@@ -80,9 +80,10 @@ function renderTransactions() {
   $('#empty-state p').textContent = state.transactions.length ? 'Tente outra busca ou altere o filtro.' : 'Registre uma entrada ou saída para acompanhar seu dinheiro.';
 }
 function openDialog(id) { const dialog = $(id); dialog.querySelectorAll('.form-error').forEach(el => el.textContent = ''); dialog.showModal(); }
-function transactionDialog(id) {
+function transactionDialog(id, type) {
   const form = $('#transaction-form'); form.reset();
   form.elements.id.value = '';
+  if (type) form.elements.type.value = type;
   form.elements.date.min = state.startedOn; form.elements.date.max = addDays(dateKey(), MAX_SCHEDULE_DAYS); form.elements.date.value = dateKey();
   const transaction = state.transactions.find(t => t.id === id);
   if (transaction) {
@@ -161,6 +162,7 @@ function loginBusy(value) {
   $('#login-toggle').disabled = value;
 }
 $('#new-transaction').onclick = () => transactionDialog();
+document.querySelectorAll('[data-quick-type]').forEach(button => button.onclick = () => transactionDialog(undefined, button.dataset.quickType));
 $('#empty-add').onclick = () => transactionDialog();
 $('#initial-button').onclick = settingsDialog;
 $('#settings-button').onclick = settingsDialog;
