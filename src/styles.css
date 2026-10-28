@@ -104,8 +104,24 @@ dialog{border-color:#e4e4df;border-radius:12px;box-shadow:0 18px 70px #24252020;
 .forecast-flow strong{color:#494a45;font-size:12px;font-weight:550;overflow-wrap:anywhere}
 .forecast-balance{text-align:right}
 .forecast-balance strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.nav-link>.nav-label-full{width:auto;font-size:inherit;text-align:inherit}
+.nav-link>.nav-label-short{display:none}
+.settings-panel{padding:24px;margin-bottom:18px}
+.settings-intro h2{font-size:18px;font-weight:570}
+.settings-intro p{margin:8px 0 22px;color:#73746f;font-size:12px;line-height:1.6}
+.settings-panel form,.settings-panel .settings-extra{max-width:560px}
+.settings-panel form>label{font-size:12px}
+.settings-panel input:not([type=file]){min-height:44px}
 @media(max-width:850px){.forecast-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1.25fr) minmax(90px,.75fr);gap:10px}}
 @media(max-width:620px){
+  .settings-panel{padding:19px 14px}
+  .settings-panel input:not([type=file]){font-size:16px;min-height:48px}
+  .sidebar{height:auto;min-height:60px;flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+  .sidebar .brand{align-self:flex-start}
+  .sidebar nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;flex:none;width:100%;margin:0}
+  .sidebar .nav-link{width:auto;min-width:0;min-height:42px;height:auto;padding:6px 2px;font-size:10px;line-height:1.2;text-align:center;overflow-wrap:anywhere}
+  .sidebar .nav-link>span{display:none}
+  .sidebar .nav-link>.nav-label-short{display:inline;width:auto;font-size:inherit}
   .forecast-panel{padding:19px 14px}
   .forecast-heading{flex-direction:column;gap:14px}
   .forecast-heading h2{font-size:16px}

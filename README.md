@@ -17,6 +17,7 @@ Há também um teste de interface opcional em `tests/browser-smoke.mjs`: requer 
 
 ## Como o saldo funciona
 
+- O menu separa Visão geral, Movimentações, Previsão e Configurações em telas próprias. Os endereços com `#overview`, `#transactions`, `#forecast` e `#settings` podem ser abertos diretamente, e os botões de voltar e avançar do navegador funcionam entre as telas.
 - O saldo inicial representa o dinheiro que você já tem ao começar, sem duplicar esse valor como uma entrada.
 - O saldo é dividido igualmente pelas semanas até o próximo recebimento. Semanas começam na segunda-feira; a primeira e a última podem ser parciais e recebem uma parte igual.
 - Uma saída desconta somente da semana em que ocorreu. Uma entrada redistribui o saldo total entre as semanas restantes.

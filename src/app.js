@@ -115,7 +115,7 @@ function updateDateHint(date) {
     ? 'Lançamento agendado. Ele não altera seu saldo disponível até a data escolhida; até lá, aparece como previsão da semana.'
     : 'Entradas redistribuem o saldo. Saídas reduzem a semana em que aconteceram.';
 }
-function settingsDialog() {
+function fillSettings() {
   const form = $('#settings-form');
   form.elements.balance.value = (state.initialBalance / 100).toFixed(2).replace('.', ',');
   form.elements.payday.value = nextPayday(dateKey(), state.paydayOverrides);
@@ -123,7 +123,6 @@ function settingsDialog() {
   const next = parseDate(nextPayday(dateKey()));
   form.elements.payday.max = dateKey(new Date(next.getFullYear(), next.getMonth() + 1, 0, 12));
   $('#balance-hint').textContent = `Saldo inicial em ${parseDate(state.startedOn).toLocaleDateString('pt-BR')}. Entradas e saídas são somadas a ele. Alterar este valor recalcula todo o histórico.`;
-  openDialog('#settings-dialog');
 }
 function askConfirmation(title, message) {
   return new Promise(resolve => {
@@ -149,6 +148,7 @@ async function activateCloud(adapter) {
   unsubscribeAuth?.();
   unsubscribeAuth = adapter.onSignedOut(showLogin);
   render();
+  if (location.hash === '#settings') fillSettings();
   $('#login-screen').hidden = true;
   $('#app-sidebar').hidden = false;
   $('#overview').hidden = false;
@@ -179,9 +179,8 @@ function loginBusy(value) {
 $('#new-transaction').onclick = () => transactionDialog();
 document.querySelectorAll('[data-quick-type]').forEach(button => button.onclick = () => transactionDialog(undefined, button.dataset.quickType));
 $('#empty-add').onclick = () => transactionDialog();
-$('#initial-button').onclick = settingsDialog;
-$('#settings-button').onclick = settingsDialog;
-$('#payday-button').onclick = settingsDialog;
+$('#initial-button').onclick = () => navigatePage('#settings');
+$('#payday-button').onclick = () => navigatePage('#settings');
 $('#how-button').onclick = () => openDialog('#info-dialog');
 document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
 document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } }));
@@ -192,7 +191,40 @@ document.querySelectorAll('[data-filter]').forEach(button => button.onclick = ()
 $('#search').addEventListener('input', renderTransactions);
 document.querySelectorAll('[data-forecast]').forEach(button => button.addEventListener('click', () => { forecastUnit = button.dataset.forecast; render(); }));
 $('#transaction-form').elements.date.addEventListener('input', event => updateDateHint(event.target.value));
-document.querySelectorAll('a.nav-link').forEach(link => link.onclick = () => document.querySelectorAll('a.nav-link').forEach(l => l.classList.toggle('active', l === link)));
+const pages = {
+  overview:{title:'Visão geral', description:'Seu dinheiro, organizado por semana.'},
+  forecast:{title:'Previsão', description:'Acompanhe os próximos períodos.'},
+  transactions:{title:'Movimentações', description:'Consulte e gerencie seus lançamentos.'},
+  settings:{title:'Configurações', description:'Ajuste seu planejamento e seus dados.'}
+};
+let currentPage;
+function showPage(scroll = false) {
+  const requested = location.hash.slice(1);
+  const page = Object.hasOwn(pages, requested) ? requested : 'overview';
+  if (page === 'settings' && currentPage !== page) fillSettings();
+  currentPage = page;
+  document.querySelectorAll('[data-page]').forEach(view => view.hidden = view.dataset.page !== page);
+  document.querySelectorAll('a.nav-link').forEach(link => {
+    const selected = link.getAttribute('href') === `#${page}`;
+    link.classList.toggle('active', selected);
+    if (selected) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+  });
+  $('#page-title').textContent = pages[page].title;
+  $('#page-description').textContent = pages[page].description;
+  $('#breadcrumb-title').textContent = pages[page].title;
+  if (scroll) window.scrollTo({top:0, behavior:'auto'});
+}
+function navigatePage(target) {
+  if (location.hash !== target) history.pushState(null, '', target);
+  showPage(true);
+}
+document.querySelectorAll('.sidebar a[href^="#"]').forEach(link => link.addEventListener('click', event => {
+  event.preventDefault();
+  navigatePage(link.getAttribute('href'));
+}));
+window.addEventListener('popstate', () => showPage(true));
+window.addEventListener('hashchange', () => showPage(true));
+showPage();
 $('#transaction-form').onsubmit = async event => {
   event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('[type=submit]'); button.disabled = true;
   try {
@@ -216,7 +248,7 @@ $('#settings-form').onsubmit = async event => {
     const next = structuredClone(state); next.initialBalance = balance; next.initialized = true;
     for (const [month, date] of Object.entries(next.paydayOverrides)) if (date > dateKey()) delete next.paydayOverrides[month];
     next.paydayOverrides[payday.slice(0, 7)] = payday;
-    await commit(next); $('#settings-dialog').close(); toast('Planejamento atualizado.');
+    await commit(next); toast('Planejamento atualizado.');
   } catch (error) { form.querySelector('.form-error').textContent = error.message; }
   finally { button.disabled = false; }
 };
@@ -237,7 +269,7 @@ $('#import-input').onchange = async event => {
     if (!await askConfirmation('Restaurar backup?', 'Os dados atuais serão exportados como backup e substituídos pelos dados deste arquivo.')) return;
     download(state, `semana-antes-da-importacao-${dateKey()}.json`);
     await commit(imported);
-    $('#settings-dialog').close(); toast('Backup restaurado.');
+    fillSettings(); toast('Backup restaurado.');
   } catch (error) { toast(error.message || 'Arquivo inválido.'); }
   finally { event.target.value = ''; }
 };
