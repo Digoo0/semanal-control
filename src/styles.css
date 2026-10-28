@@ -70,6 +70,18 @@ dialog{border-color:#e4e4df;border-radius:12px;box-shadow:0 18px 70px #24252020;
   .filter-tabs{max-width:100%;overflow:hidden}
   .filter-tabs button{padding-inline:clamp(8px,3vw,13px)}
   .search-box{min-width:0}
-  .table-wrap{max-width:100%;overscroll-behavior-x:contain}
+  .table-wrap{max-width:100%;overflow:visible}
+  .table-wrap table,.table-wrap tbody{display:block;width:100%;min-width:0}
+  .table-wrap thead{display:none}
+  .table-wrap tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;width:100%;padding:14px 0;border-bottom:1px solid #eff1eb}
+  .table-wrap td{display:block;min-width:0;padding:0;border:0;white-space:normal}
+  .table-wrap td:nth-child(1){grid-column:1;grid-row:1}
+  .table-wrap td:nth-child(2){grid-column:1;grid-row:2}
+  .table-wrap td:nth-child(3){grid-column:1;grid-row:3}
+  .table-wrap td:nth-child(4){grid-column:2;grid-row:1;text-align:right;white-space:nowrap}
+  .table-wrap td:nth-child(5){grid-column:2;grid-row:2 / span 2;align-self:center}
+  .table-wrap .entry-name{max-width:none;min-width:0}
+  .table-wrap .entry-name span:last-child{min-width:0;white-space:normal;overflow-wrap:anywhere}
+  .table-wrap .row-action{min-width:40px;min-height:40px}
   .mobile-quick-actions{width:100%;left:0;right:0;padding-inline:12px}
 }
