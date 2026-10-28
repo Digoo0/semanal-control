@@ -1,5 +1,6 @@
 import {build} from 'esbuild';
-import {mkdir, rm, copyFile, writeFile} from 'node:fs/promises';
+import {mkdir, rm, copyFile, readFile, writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
@@ -23,6 +24,14 @@ await build({
   minify:true,
   logLevel:'info'
 });
-await Promise.all(['index.html','styles.css','icon.svg'].map(file => copyFile(path.join(project, 'src', file), path.join(output, file))));
+const [html, css] = await Promise.all(['index.html', 'styles.css'].map(file => readFile(path.join(project, 'src', file), 'utf8')));
+const stylesheet = `assets/styles-${createHash('sha256').update(css).digest('hex').slice(0, 12)}.css`;
+if (!html.includes('href="./styles.css"')) throw new Error('Referência ao CSS não encontrada no HTML.');
+await mkdir(path.join(output, 'assets'), {recursive:true});
+await Promise.all([
+  writeFile(path.join(output, 'index.html'), html.replace('href="./styles.css"', `href="./${stylesheet}"`)),
+  writeFile(path.join(output, stylesheet), css),
+  copyFile(path.join(project, 'src', 'icon.svg'), path.join(output, 'icon.svg'))
+]);
 await writeFile(path.join(output, '.nojekyll'), '');
 console.log('Build pronto em dist/ (compatível com subdiretórios do GitHub Pages).');
