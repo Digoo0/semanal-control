@@ -22,6 +22,11 @@ export function nextPayday(today, overrides = {}) {
   const current = paydayForMonth(date.getFullYear(), date.getMonth(), overrides);
   return current > today ? current : paydayForMonth(date.getFullYear(), date.getMonth() + 1, overrides);
 }
+function cycleStartFor(day, overrides = {}) {
+  const date = parseDate(day);
+  const current = paydayForMonth(date.getFullYear(), date.getMonth(), overrides);
+  return current <= day ? current : paydayForMonth(date.getFullYear(), date.getMonth() - 1, overrides);
+}
 export function periodsBetween(today, payday) {
   const periods = [];
   let start = today;
@@ -82,8 +87,12 @@ export function calculate(state, today = dateKey()) {
   for (const t of state.transactions) {
     if (!events.has(t.date)) events.set(t.date, []);
     events.get(t.date).push(t);
-    const start = t.type === 'expense' ? t.reservedFrom ?? (t.date > today ? today : undefined) : undefined;
-    if (start && start <= today) reservationStarts.set(start, (reservationStarts.get(start) || 0) + t.amount);
+    const recorded = t.type === 'expense' ? t.reservedFrom ?? (t.date > today ? today : undefined) : undefined;
+    if (recorded) {
+      const cycleStart = cycleStartFor(t.date, state.paydayOverrides);
+      const start = recorded > cycleStart ? recorded : cycleStart;
+      if (start <= today) reservationStarts.set(start, (reservationStarts.get(start) || 0) + t.amount);
+    }
   }
   const distributable = () => reserved > 0 ? Math.max(0, total - reserved) : total;
   for (let day = state.startedOn; day <= today; day = addDays(day, 1)) {

@@ -102,8 +102,10 @@ try {
   await waitFor(`document.querySelector('#total-balance').textContent.includes('400,00')`);
   assert.match(await evaluate(`document.querySelector('#total-balance').textContent`), /400,00/);
   await evaluate(`{document.querySelector('#new-transaction').click();const f=document.querySelector('#transaction-form');f.elements.amount.value='100,00';f.elements.description.value='Conta futura';const d=new Date(f.elements.date.value+'T12:00:00');d.setDate(d.getDate()+10);f.elements.date.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');f.requestSubmit();}`);
-  await waitFor(`document.querySelector('#reserved-balance').textContent.includes('100,00') && !document.querySelector('#transaction-dialog').open`);
-  assert.match(await evaluate(`document.querySelector('#available-balance').textContent`), /300,00/);
+  await waitFor(`document.querySelectorAll('#transaction-rows tr').length === 1 && !document.querySelector('#transaction-dialog').open`);
+  const beforePayday = await evaluate(`JSON.parse(sessionStorage.getItem('qa:state:teste@example.com')).transactions[0].date < document.querySelector('#settings-form').elements.payday.value`);
+  assert.match(await evaluate(`document.querySelector('#reserved-balance').textContent`), beforePayday ? /100,00/ : /0,00/);
+  assert.match(await evaluate(`document.querySelector('#available-balance').textContent`), beforePayday ? /300,00/ : /400,00/);
   assert.ok(await evaluate(`JSON.parse(sessionStorage.getItem('qa:state:teste@example.com')).transactions[0].reservedFrom`));
   await evaluate(`document.querySelector('[data-delete]').click()`); await waitFor(`document.querySelector('#confirm-dialog').open`);
   await evaluate(`document.querySelector('#confirm-ok').click()`); await waitFor(`document.querySelector('#reserved-balance').textContent.includes('0,00') && document.querySelectorAll('#transaction-rows tr').length===0`);

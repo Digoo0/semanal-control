@@ -55,7 +55,7 @@ function render() {
   $('#reserved-balance').textContent = money(budget.reserved);
   $('#available-balance').textContent = money(budget.available);
   $('#reservation-warning').hidden = budget.shortfall === 0;
-  $('#reservation-warning').textContent = budget.shortfall ? `Faltam ${money(budget.shortfall)} para cobrir as contas agendadas.` : '';
+  $('#reservation-warning').textContent = budget.shortfall ? `Faltam ${money(budget.shortfall)} para cobrir as contas até o próximo recebimento.` : '';
   $('#month-income').textContent = money(budget.income);
   $('#month-expense').textContent = money(budget.expense);
   $('#welcome-strip').hidden = state.initialized;
@@ -117,7 +117,9 @@ function transactionDialog(id, type) {
 function updateDateHint(date) {
   $('#transaction-date-hint').textContent = date > dateKey()
     ? ($('#transaction-form').elements.type.value === 'expense'
-      ? 'Esta despesa será reservada agora e descontada do saldo total na data escolhida.'
+      ? (date < nextPayday(dateKey(), state.paydayOverrides)
+        ? 'Esta despesa será reservada agora e descontada do saldo total na data escolhida.'
+        : 'Esta despesa será reservada no ciclo do vencimento e descontada do saldo total na data escolhida.')
       : 'Esta entrada aparece na previsão e será somada ao saldo na data escolhida.')
     : 'Entradas redistribuem o saldo livre. Saídas reduzem a semana em que aconteceram.';
 }

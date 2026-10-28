@@ -47,10 +47,47 @@ test('entradas futuras não liberam dinheiro antes da data', () => {
 });
 
 test('contas acima do saldo mostram insuficiência e não criam verba livre', () => {
-  const state = fixture([entry('card','2026-02-09','expense',45000,'2026-01-05')]);
+  const state = fixture([entry('card','2026-01-30','expense',45000,'2026-01-05')]);
   const result = calculate(state, '2026-01-05');
   assert.deepEqual([result.total,result.reserved,result.available,result.shortfall], [40000,45000,0,5000]);
   assert.deepEqual(result.periods.map(p => p.amount), [0,0,0,0]);
+});
+
+test('contas após o próximo recebimento só são reservadas no ciclo seguinte', () => {
+  const state = {...newState('2026-10-27'), initialized:true, initialBalance:297, transactions:[entry('card','2026-11-09','expense',50930,'2026-10-27')]};
+  const now = calculate(state, '2026-10-27');
+  assert.equal(now.payday, '2026-11-02');
+  assert.deepEqual([now.total,now.reserved,now.available,now.shortfall], [297,0,297,0]);
+  assert.deepEqual(now.periods.map(p => p.amount), [297]);
+  assert.equal(calculate(state, '2026-11-01').reserved, 0);
+  const nextCycle = calculate(state, '2026-11-02');
+  assert.deepEqual([nextCycle.total,nextCycle.reserved,nextCycle.available,nextCycle.shortfall], [297,50930,0,50633]);
+  state.transactions.push(entry('salary','2026-11-02','income',100000));
+  const afterSalary = calculate(state, '2026-11-02');
+  assert.deepEqual([afterSalary.total,afterSalary.reserved,afterSalary.available], [100297,50930,49367]);
+  const afterBill = calculate(state, '2026-11-09');
+  assert.deepEqual([afterBill.total,afterBill.reserved,afterBill.available], [49367,0,49367]);
+  assert.equal(afterBill.periods.reduce((sum, p) => sum + p.amount, 0), 49367);
+});
+
+test('contas na data do recebimento pertencem ao novo ciclo', () => {
+  const state = fixture([entry('bill','2026-02-02','expense',10000,'2026-01-05')]);
+  assert.equal(calculate(state, '2026-01-31').reserved, 0);
+  const due = calculate(state, '2026-02-02');
+  assert.deepEqual([due.total,due.reserved,due.available], [30000,0,30000]);
+  assert.equal(due.periods.reduce((sum, p) => sum + p.amount, 0), 30000);
+});
+
+test('data de recebimento ajustada determina o ciclo das contas', () => {
+  const state = {...newState('2026-10-27'), initialized:true, initialBalance:10000, paydayOverrides:{'2026-11':'2026-11-03'}, transactions:[
+    entry('before','2026-11-02','expense',3000,'2026-10-27'),
+    entry('on-payday','2026-11-03','expense',4000,'2026-10-27')
+  ]};
+  const now = calculate(state, '2026-10-27');
+  assert.equal(now.payday, '2026-11-03');
+  assert.deepEqual([now.reserved,now.available], [3000,7000]);
+  const due = calculate(state, '2026-11-03');
+  assert.deepEqual([due.total,due.reserved,due.available], [3000,0,3000]);
 });
 
 test('lançamentos futuros antigos são reservados e a remoção libera o valor', () => {
