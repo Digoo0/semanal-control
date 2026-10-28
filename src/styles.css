@@ -104,6 +104,11 @@ dialog{border-color:#e4e4df;border-radius:12px;box-shadow:0 18px 70px #24252020;
 .forecast-flow strong{color:#494a45;font-size:12px;font-weight:550;overflow-wrap:anywhere}
 .forecast-balance{text-align:right}
 .forecast-balance strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.balance-breakdown{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding-top:14px;border-top:1px solid #eaeae6}
+.balance-breakdown>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.balance-breakdown span{color:#73746f;font-size:11px;line-height:1.4}
+.balance-breakdown strong{color:#30312d;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.reservation-warning{margin:14px 0 0;padding:10px 12px;border-radius:6px;background:#fff4eb;color:#8a4c35;font-size:11px;line-height:1.5}
 .nav-link>.nav-label-full{width:auto;font-size:inherit;text-align:inherit}
 .nav-link>.nav-label-short{display:none}
 .settings-panel{padding:24px;margin-bottom:18px}

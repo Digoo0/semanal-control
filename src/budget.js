@@ -54,6 +54,10 @@ export function validateState(state, today = dateKey()) {
     if (typeof t.id !== 'string' || !t.id || ids.has(t.id)) throw new Error('Identificador inválido.');
     ids.add(t.id); parseDate(t.date);
     if (t.date < state.startedOn || t.date > addDays(today, MAX_SCHEDULE_DAYS) || !['income', 'expense'].includes(t.type) || !Number.isSafeInteger(t.amount) || t.amount <= 0 || t.amount > MAX_CENTS || typeof t.description !== 'string' || !t.description.trim() || t.description.length > 100 || !['Alimentação', 'Transporte', 'Casa', 'Lazer', 'Saúde', 'Salário', 'Outros'].includes(t.category)) throw new Error('Lançamento inválido.');
+    if (t.reservedFrom !== undefined) {
+      parseDate(t.reservedFrom);
+      if (t.type !== 'expense' || t.reservedFrom < state.startedOn || t.reservedFrom >= t.date) throw new Error('Reserva inválida.');
+    }
   }
   if (!state.paydayOverrides || typeof state.paydayOverrides !== 'object' || Array.isArray(state.paydayOverrides)) throw new Error('Recebimento inválido.');
   for (const [month, day] of Object.entries(state.paydayOverrides)) {
@@ -62,41 +66,43 @@ export function validateState(state, today = dateKey()) {
   }
   return state;
 }
+export function prepareReservations(state, today = dateKey()) {
+  let changed = false;
+  const transactions = state.transactions.map(t => {
+    if (t.type !== 'expense' || t.date <= today || t.reservedFrom) return t;
+    changed = true;
+    return {...t, reservedFrom:today};
+  });
+  return changed ? {...state, transactions} : state;
+}
 export function calculate(state, today = dateKey()) {
   validateState(state, today);
-  let total = state.initialBalance, allocated = [];
-  const events = new Map();
+  let total = state.initialBalance, reserved = 0, allocated = [];
+  const events = new Map(), reservationStarts = new Map();
   for (const t of state.transactions) {
     if (!events.has(t.date)) events.set(t.date, []);
     events.get(t.date).push(t);
+    const start = t.type === 'expense' ? t.reservedFrom ?? (t.date > today ? today : undefined) : undefined;
+    if (start && start <= today) reservationStarts.set(start, (reservationStarts.get(start) || 0) + t.amount);
   }
+  const distributable = () => reserved > 0 ? Math.max(0, total - reserved) : total;
   for (let day = state.startedOn; day <= today; day = addDays(day, 1)) {
     const date = parseDate(day);
     const isPayday = paydayForMonth(date.getFullYear(), date.getMonth(), state.paydayOverrides) === day;
-    if (day === state.startedOn || date.getDay() === 1 || isPayday) allocated = distribute(total, periodsBetween(day, nextPayday(day, state.paydayOverrides)).length);
+    reserved += reservationStarts.get(day) || 0;
+    if (day === state.startedOn || date.getDay() === 1 || isPayday || reservationStarts.has(day)) allocated = distribute(distributable(), periodsBetween(day, nextPayday(day, state.paydayOverrides)).length);
     for (const t of events.get(day) || []) {
       total += t.type === 'income' ? t.amount : -t.amount;
-      if (t.type === 'income') allocated = distribute(total, allocated.length);
+      if (t.type === 'income') allocated = distribute(distributable(), allocated.length);
+      else if (t.reservedFrom && t.reservedFrom < t.date) reserved -= t.amount;
       else allocated[0] -= t.amount;
     }
   }
   const payday = nextPayday(today, state.paydayOverrides);
-  let forecastTotal = total, forecast = [...allocated];
-  const forecastPeriods = periodsBetween(today, payday);
-  for (let day = addDays(today, 1); day < payday; day = addDays(day, 1)) {
-    for (const t of events.get(day) || []) {
-      forecastTotal += t.type === 'income' ? t.amount : -t.amount;
-      if (t.type === 'income') forecast = distribute(forecastTotal, forecast.length);
-      else {
-        const periodIndex = forecastPeriods.findIndex(period => day >= period.start && day <= period.end);
-        if (periodIndex >= 0) forecast[periodIndex] -= t.amount;
-      }
-    }
-  }
-  const periods = periodsBetween(today, payday).map((period, i) => ({...period, amount: forecast[i] ?? 0}));
+  const periods = periodsBetween(today, payday).map((period, i) => ({...period, amount: allocated[i] ?? 0}));
   const month = today.slice(0, 7);
   const monthEntries = state.transactions.filter(t => t.date.startsWith(month) && t.date <= today);
-  return {total, payday, periods, income: monthEntries.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), expense: monthEntries.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)};
+  return {total, reserved, available:Math.max(0, total - reserved), shortfall:reserved > 0 ? Math.max(0, reserved - total) : 0, payday, periods, income: monthEntries.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0), expense: monthEntries.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)};
 }
 
 // Project only registered transactions after today; today's movements are already in the balance.

@@ -1,4 +1,4 @@
-import {calculate, projectPeriods, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS, MAX_SCHEDULE_DAYS} from './budget.js';
+import {calculate, projectPeriods, prepareReservations, dateKey, parseDate, addDays, nextPayday, newState, validateState, MAX_CENTS, MAX_SCHEDULE_DAYS} from './budget.js';
 
 const $ = selector => document.querySelector(selector);
 const money = cents => (cents / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -52,6 +52,10 @@ function render() {
   $('#today-label').textContent = date.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
   document.querySelectorAll('.current-month').forEach(el => el.textContent = date.toLocaleDateString('pt-BR', {month:'long'}));
   $('#total-balance').textContent = money(budget.total);
+  $('#reserved-balance').textContent = money(budget.reserved);
+  $('#available-balance').textContent = money(budget.available);
+  $('#reservation-warning').hidden = budget.shortfall === 0;
+  $('#reservation-warning').textContent = budget.shortfall ? `Faltam ${money(budget.shortfall)} para cobrir as contas agendadas.` : '';
   $('#month-income').textContent = money(budget.income);
   $('#month-expense').textContent = money(budget.expense);
   $('#welcome-strip').hidden = state.initialized;
@@ -59,7 +63,7 @@ function render() {
   const maximum = Math.max(...budget.periods.map(w => w.amount), 1);
   $('#weeks').innerHTML = budget.periods.map((week, index) => {
     const planned = state.transactions.filter(t => t.date > today && t.date >= week.start && t.date <= week.end).length;
-    const detail = planned ? `Previsto · ${planned} agendado${planned === 1 ? '' : 's'}` : index === 0 ? week.amount < 0 ? 'Limite ultrapassado' : 'Disponível para usar' : 'Reservado para depois';
+    const detail = planned ? `${planned} agendamento${planned === 1 ? '' : 's'} no período` : index === 0 ? week.amount < 0 ? 'Limite ultrapassado' : 'Disponível para usar' : 'Disponível para esta semana';
     return `<div class="week-card ${index === 0 ? 'current' : ''}"><div class="week-title">${index === 0 ? '<span class="tiny-dot"></span> Semana atual' : `Semana ${index + 1}`}</div><div class="week-date">${shortDate(week.start)} – ${shortDate(week.end)}</div><div class="week-amount ${week.amount < 0 ? 'negative' : ''}">${escapeHtml(money(week.amount))}</div><div class="week-bar"><i style="width:${Math.max(0, Math.min(100, week.amount / maximum * 100))}%"></i></div><div class="week-foot ${planned ? 'scheduled-text' : ''}">${detail}</div></div>`;
   }).join('');
   $('#payday-label').textContent = parseDate(budget.payday).toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
@@ -82,7 +86,7 @@ function renderForecast(today, total) {
       : parseDate(period.start).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
     const dates = `${formatDay(period.start)} a ${formatDay(period.end)}`;
     const count = `${period.entries} ${period.entries === 1 ? 'agendamento' : 'agendamentos'}`;
-    return `<article class="forecast-row"><div class="forecast-period"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(dates)} · ${count}</span></div><div class="forecast-flow"><span>Entradas <strong>+ ${escapeHtml(money(period.income))}</strong></span><span>Saídas <strong>− ${escapeHtml(money(period.expense))}</strong></span></div><div class="forecast-balance"><span>Saldo ao final</span><strong class="${period.balance < 0 ? 'negative' : ''}">${escapeHtml(money(period.balance))}</strong></div></article>`;
+    return `<article class="forecast-row"><div class="forecast-period"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(dates)} · ${count}</span></div><div class="forecast-flow"><span>Entradas <strong>+ ${escapeHtml(money(period.income))}</strong></span><span>Saídas <strong>− ${escapeHtml(money(period.expense))}</strong></span></div><div class="forecast-balance"><span>Saldo total ao final</span><strong class="${period.balance < 0 ? 'negative' : ''}">${escapeHtml(money(period.balance))}</strong></div></article>`;
   }).join('');
 }
 function renderTransactions() {
@@ -112,8 +116,10 @@ function transactionDialog(id, type) {
 }
 function updateDateHint(date) {
   $('#transaction-date-hint').textContent = date > dateKey()
-    ? 'Lançamento agendado. Ele não altera seu saldo disponível até a data escolhida; até lá, aparece como previsão da semana.'
-    : 'Entradas redistribuem o saldo. Saídas reduzem a semana em que aconteceram.';
+    ? ($('#transaction-form').elements.type.value === 'expense'
+      ? 'Esta despesa será reservada agora e descontada do saldo total na data escolhida.'
+      : 'Esta entrada aparece na previsão e será somada ao saldo na data escolhida.')
+    : 'Entradas redistribuem o saldo livre. Saídas reduzem a semana em que aconteceram.';
 }
 function fillSettings() {
   const form = $('#settings-form');
@@ -142,8 +148,9 @@ function friendlyError(error) {
 async function activateCloud(adapter) {
   const remote = await adapter.load();
   if (remote) validateState(remote);
-  const accountState = remote || newState();
-  if (!remote) await adapter.save(accountState);
+  const loadedState = remote || newState();
+  const accountState = prepareReservations(loadedState);
+  if (!remote || accountState !== loadedState) await adapter.save(accountState);
   cloud = adapter; state = accountState;
   unsubscribeAuth?.();
   unsubscribeAuth = adapter.onSignedOut(showLogin);
@@ -191,6 +198,7 @@ document.querySelectorAll('[data-filter]').forEach(button => button.onclick = ()
 $('#search').addEventListener('input', renderTransactions);
 document.querySelectorAll('[data-forecast]').forEach(button => button.addEventListener('click', () => { forecastUnit = button.dataset.forecast; render(); }));
 $('#transaction-form').elements.date.addEventListener('input', event => updateDateHint(event.target.value));
+$('#transaction-form').addEventListener('change', event => { if (event.target.name === 'type') updateDateHint(event.currentTarget.elements.date.value); });
 const pages = {
   overview:{title:'Visão geral', description:'Seu dinheiro, organizado por semana.'},
   forecast:{title:'Previsão', description:'Acompanhe os próximos períodos.'},
@@ -232,6 +240,11 @@ $('#transaction-form').onsubmit = async event => {
     const entry = {id, type:data.get('type'), description:data.get('description').trim(), category:data.get('category'), date:data.get('date'), amount:parseMoney(data.get('amount'))};
     if (entry.date < state.startedOn || entry.date > addDays(dateKey(), MAX_SCHEDULE_DAYS)) throw new Error('A data deve estar entre o início do histórico e os próximos 10 anos.');
     const next = structuredClone(state), existing = next.transactions.findIndex(t => t.id === id);
+    const previous = existing >= 0 ? next.transactions[existing] : null;
+    if (entry.type === 'expense') {
+      if (previous?.reservedFrom && previous.reservedFrom < entry.date) entry.reservedFrom = previous.reservedFrom;
+      else if (entry.date > dateKey()) entry.reservedFrom = dateKey();
+    }
     if (existing >= 0) next.transactions[existing] = entry; else next.transactions.push(entry);
     next.initialized = true;
     await commit(next); $('#transaction-dialog').close(); toast('Movimentação salva. Seu plano está atualizado.');
@@ -265,7 +278,7 @@ $('#import-input').onchange = async event => {
   const file = event.target.files[0]; if (!file) return;
   try {
     if (file.size > 5_000_000) throw new Error('O arquivo deve ter no máximo 5 MB.');
-    const imported = validateState(JSON.parse(await file.text()));
+    const imported = prepareReservations(validateState(JSON.parse(await file.text())));
     if (!await askConfirmation('Restaurar backup?', 'Os dados atuais serão exportados como backup e substituídos pelos dados deste arquivo.')) return;
     download(state, `semana-antes-da-importacao-${dateKey()}.json`);
     await commit(imported);

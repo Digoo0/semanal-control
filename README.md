@@ -19,11 +19,12 @@ Há também um teste de interface opcional em `tests/browser-smoke.mjs`: requer 
 
 - O menu separa Visão geral, Movimentações, Previsão e Configurações em telas próprias. Os endereços com `#overview`, `#transactions`, `#forecast` e `#settings` podem ser abertos diretamente, e os botões de voltar e avançar do navegador funcionam entre as telas.
 - O saldo inicial representa o dinheiro que você já tem ao começar, sem duplicar esse valor como uma entrada.
-- O saldo é dividido igualmente pelas semanas até o próximo recebimento. Semanas começam na segunda-feira; a primeira e a última podem ser parciais e recebem uma parte igual.
-- Uma saída desconta somente da semana em que ocorreu. Uma entrada redistribui o saldo total entre as semanas restantes.
-- Movimentações podem ser agendadas para até 10 anos no futuro. Elas aparecem como **Agendado** no histórico e entram apenas nas divisões semanais previstas; o saldo de hoje e os totais efetivamente recebidos ou pagos só mudam na data do lançamento.
+- O saldo livre (saldo total menos as despesas futuras agendadas) é dividido igualmente pelas semanas até o próximo recebimento. Semanas começam na segunda-feira; a primeira e a última podem ser parciais e recebem uma parte igual.
+- Uma despesa realizada sem agendamento desconta da semana em que ocorreu. Uma entrada redistribui o saldo livre entre as semanas restantes.
+- Movimentações podem ser agendadas para até 10 anos no futuro. Toda despesa futura fica comprometida imediatamente, mesmo quando vence depois do próximo recebimento. Na data do vencimento ela reduz o saldo total e deixa de ser reservada, sem descontar novamente do limite semanal. Entradas futuras só aumentam o saldo quando chega sua data.
+- Quando as contas agendadas superam o saldo total, o dinheiro livre fica em zero e o painel mostra quanto falta para cobri-las. Contas agendadas anteriormente recebem uma data de início da reserva quando o app atualizado é aberto.
 - Na segunda-feira seguinte, todo o saldo que restou é dividido novamente. O cálculo é reconstruído pelo histórico mesmo que você fique dias sem abrir a aplicação.
-- R$ 400 em quatro semanas → R$ 100 por semana. Gasto de R$ 50 → R$ 50 / R$ 100 / R$ 100 / R$ 100. Na semana seguinte → R$ 116,67 / R$ 116,67 / R$ 116,66.
+- R$ 400 sem contas agendadas em quatro semanas → R$ 100 por semana. Gasto de R$ 50 → R$ 50 / R$ 100 / R$ 100 / R$ 100. Na semana seguinte → R$ 116,67 / R$ 116,67 / R$ 116,66. Se houver R$ 150 em contas futuras, ficam R$ 250 livres: R$ 62,50 por semana.
 - Centavos são inteiros; o excedente de arredondamento vai para as primeiras semanas.
 - O limite da semana pode ficar negativo. Um saldo total negativo não gera reservas positivas após redistribuir.
 - O recebimento previsto é o primeiro dia de segunda a sexta do mês. Feriados **não são consultados automaticamente**: ajuste a data em Configurações. No Brasil, 02/11/2026 é um exemplo de ajuste necessário; informe a data em que seu pagamento realmente cairá.
