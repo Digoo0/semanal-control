@@ -146,6 +146,16 @@ dialog.sheet[open]{animation:up .2s ease-out}
 .amount-field:focus-within{border-color:var(--ink)}
 .amount-field .currency{font-size:22px;font-weight:600;color:var(--muted)}
 .amount-field input{border:0;height:68px;padding:0;font-size:34px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;background:none}
+.switch{flex-direction:row;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch-text{flex:1;min-width:0}
+.switch-text strong{display:block;color:var(--ink);font-size:15px;font-weight:600}
+.switch-text small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.35}
+.switch-ui{flex-shrink:0;width:44px;height:26px;border-radius:13px;background:#d6d6d0;position:relative;transition:background .15s}
+.switch-ui::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0003;transition:transform .15s}
+.switch input:checked~.switch-ui{background:var(--ink)}
+.switch input:checked~.switch-ui::after{transform:translateX(18px)}
+.switch:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px}
 .settings-more{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
 .row-links{display:flex;gap:20px;margin-bottom:10px}
 .row-links label{flex-direction:row;margin:0;color:var(--ink);font-size:14px}

@@ -85,6 +85,7 @@
     <label class="amount-field"><span class="sr-only">Valor</span><span class="currency" aria-hidden="true">R$</span><input name="amount" type="text" inputmode="numeric" placeholder="0,00" required maxlength="18" autocomplete="off" aria-label="Valor em reais"></label>
     <label>Descrição<input name="description" placeholder="Ex.: Mercado" maxlength="100" required autocomplete="off"></label>
     <div class="two"><label>Categoria<select name="category"><option>Alimentação</option><option>Transporte</option><option>Casa</option><option>Lazer</option><option>Saúde</option><option>Salário</option><option>Outros</option></select></label><label>Data<input type="date" name="date" required></label></div>
+    <label class="switch" id="fixed-field"><input type="checkbox" name="fixed" role="switch"><span class="switch-text"><strong>Gasto fixo</strong><small>Aluguel, fatura… divide igualmente entre as semanas até o recebimento, em vez de sair só desta semana.</small></span><span class="switch-ui" aria-hidden="true"></span></label>
     <p id="transaction-date-hint" class="hint"></p>
     <button class="button primary full" type="submit">Salvar</button>
     <button class="button danger full" type="button" id="delete-transaction" hidden>Excluir lançamento</button>

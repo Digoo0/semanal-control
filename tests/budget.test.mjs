@@ -85,3 +85,21 @@ test('importação rejeita valores fracionários em centavos, datas inválidas e
   state.transactions = [transaction(100, 'expense', '2026-01-13')]; assert.doesNotThrow(() => validateState(state, '2026-01-12'));
   state.transactions = [transaction(100, 'expense', addDays('2026-01-12', MAX_SCHEDULE_DAYS + 1))]; assert.throws(() => validateState(state, '2026-01-12'));
 });
+test('gasto fixo de R$ 200 sai igualmente das quatro semanas, não só da atual', () => {
+  const state = fixture(); state.transactions.push({...transaction(20000), fixed:true});
+  const result = calculate(state, '2026-01-06');
+  assert.equal(result.total, 20000);
+  assert.deepEqual(result.periods.map(w => w.amount), [5000,5000,5000,5000]);
+});
+test('gasto fixo preserva o que já foi gasto na semana atual e não perde centavos', () => {
+  const state = fixture(); state.transactions.push(transaction(3000, 'expense', '2026-01-06', '1'), {...transaction(10001, 'expense', '2026-01-07', '2'), fixed:true});
+  const result = calculate(state, '2026-01-07');
+  assert.deepEqual(result.periods.map(w => w.amount), [4499,7500,7500,7500]);
+  assert.equal(result.periods.reduce((sum, w) => sum + w.amount, 0), result.total);
+});
+test('gasto fixo só é aceito como saída com valor true', () => {
+  const state = fixture();
+  state.transactions = [{...transaction(100, 'income'), fixed:true}]; assert.throws(() => validateState(state, '2026-01-12'));
+  state.transactions = [{...transaction(100), fixed:'sim'}]; assert.throws(() => validateState(state, '2026-01-12'));
+  state.transactions = [{...transaction(100), fixed:true}]; assert.doesNotThrow(() => validateState(state, '2026-01-12'));
+});

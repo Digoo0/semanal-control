@@ -59,6 +59,7 @@ export function validateState(state, today = dateKey()) {
     if (typeof t.id !== 'string' || !t.id || ids.has(t.id)) throw new Error('Identificador inválido.');
     ids.add(t.id); parseDate(t.date);
     if (t.date < state.startedOn || t.date > addDays(today, MAX_SCHEDULE_DAYS) || !['income', 'expense'].includes(t.type) || !Number.isSafeInteger(t.amount) || t.amount <= 0 || t.amount > MAX_CENTS || typeof t.description !== 'string' || !t.description.trim() || t.description.length > 100 || !['Alimentação', 'Transporte', 'Casa', 'Lazer', 'Saúde', 'Salário', 'Outros'].includes(t.category)) throw new Error('Lançamento inválido.');
+    if (t.fixed !== undefined && (t.fixed !== true || t.type !== 'expense')) throw new Error('Gasto fixo inválido.');
     if (t.reservedFrom !== undefined) {
       parseDate(t.reservedFrom);
       if (t.type !== 'expense' || t.reservedFrom < state.startedOn || t.reservedFrom >= t.date) throw new Error('Reserva inválida.');
@@ -104,6 +105,8 @@ export function calculate(state, today = dateKey()) {
       total += t.type === 'income' ? t.amount : -t.amount;
       if (t.type === 'income') allocated = distribute(distributable(), allocated.length);
       else if (t.reservedFrom && t.reservedFrom < t.date) reserved -= t.amount;
+      // Gasto fixo (aluguel, fatura…): sai igualmente de todas as semanas até o próximo recebimento.
+      else if (t.fixed) distribute(t.amount, allocated.length).forEach((share, i) => { allocated[i] -= share; });
       else allocated[0] -= t.amount;
     }
   }

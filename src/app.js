@@ -90,7 +90,7 @@ const normalize = text => text.toLocaleLowerCase('pt-BR').normalize('NFD').repla
 const sortedTransactions = () => state.transactions.map((t, index) => ({...t, index})).sort((a, b) => b.date.localeCompare(a.date) || b.index - a.index);
 function entryHtml(t, today) {
   const income = t.type === 'income';
-  return `<li><button class="entry" data-edit="${escapeHtml(t.id)}" aria-label="Editar ${escapeHtml(t.description)}"><span class="entry-icon ${t.type}" aria-hidden="true">${income ? '+' : '−'}</span><span class="entry-text"><strong>${escapeHtml(t.description)}</strong><span>${escapeHtml(t.category)} · ${escapeHtml(shortDate(t.date))}${t.date > today ? '<span class="tag">agendado</span>' : ''}</span></span><span class="entry-amount ${t.type}">${income ? '+' : '−'} ${escapeHtml(money(t.amount))}</span></button></li>`;
+  return `<li><button class="entry" data-edit="${escapeHtml(t.id)}" aria-label="Editar ${escapeHtml(t.description)}"><span class="entry-icon ${t.type}" aria-hidden="true">${income ? '+' : '−'}</span><span class="entry-text"><strong>${escapeHtml(t.description)}</strong><span>${escapeHtml(t.category)} · ${escapeHtml(shortDate(t.date))}${t.fixed ? '<span class="tag">fixo</span>' : ''}${t.date > today ? '<span class="tag">agendado</span>' : ''}</span></span><span class="entry-amount ${t.type}">${income ? '+' : '−'} ${escapeHtml(money(t.amount))}</span></button></li>`;
 }
 function renderTransactions() {
   const today = dateKey(), all = sortedTransactions();
@@ -133,6 +133,7 @@ function resetHistoryFilters() {
 function openDialog(id) { const dialog = $(id); dialog.querySelectorAll('.form-error').forEach(el => el.textContent = ''); dialog.showModal(); }
 function updateTransactionTitle() {
   const form = $('#transaction-form');
+  $('#fixed-field').hidden = form.elements.type.value !== 'expense';
   $('#transaction-title').textContent = form.elements.id.value ? 'Editar lançamento' : form.elements.type.value === 'income' ? 'Novo ganho' : 'Novo gasto';
 }
 function transactionDialog(id, type) {
@@ -145,6 +146,7 @@ function transactionDialog(id, type) {
     for (const field of ['id','type','description','category','date']) form.elements[field].value = transaction[field];
     form.elements.amount.value = formatCents(transaction.amount);
   } else if (form.elements.type.value === 'income') form.elements.category.value = 'Salário';
+  form.elements.fixed.checked = Boolean(transaction?.fixed);
   $('#delete-transaction').hidden = !transaction;
   updateTransactionTitle();
   updateDateHint(form.elements.date.value);
@@ -258,12 +260,13 @@ $('#transaction-form').onsubmit = async event => {
     const next = structuredClone(state), existing = next.transactions.findIndex(t => t.id === id);
     const previous = existing >= 0 ? next.transactions[existing] : null;
     if (entry.type === 'expense') {
+      if (data.get('fixed')) entry.fixed = true;
       if (previous?.reservedFrom && previous.reservedFrom < entry.date) entry.reservedFrom = previous.reservedFrom;
       else if (entry.date > dateKey()) entry.reservedFrom = dateKey();
     }
     if (existing >= 0) next.transactions[existing] = entry; else next.transactions.push(entry);
     next.initialized = true;
-    await commit(next); $('#transaction-dialog').close(); toast(entry.type === 'income' ? 'Ganho salvo.' : 'Gasto salvo.');
+    await commit(next); $('#transaction-dialog').close(); toast(entry.type === 'income' ? 'Ganho salvo.' : entry.fixed ? 'Gasto fixo salvo e dividido entre as semanas.' : 'Gasto salvo.');
   } catch (error) { form.querySelector('.form-error').textContent = error.message; }
   finally { button.disabled = false; }
 };
