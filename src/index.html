@@ -1,76 +1,112 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#163d32"><meta name="description" content="Seu dinheiro organizado por semana. Acompanhe entradas, saídas e quanto você pode gastar até o próximo recebimento.">
-  <title>Semana · Seu dinheiro, no seu ritmo</title>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f4f1"><meta name="description" content="Saiba quanto você pode gastar nesta semana e registre seus gastos e ganhos.">
+  <title>Semana</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
 </head>
 <body data-auth="checking">
-  <section id="login-screen" class="login-shell" aria-labelledby="login-heading">
-    <div class="login-story">
-      <a class="brand" href="./"><span class="brand-mark">s<span>·</span></span>semana<span class="brand-dot">.</span></a>
-      <div class="login-message"><p class="eyebrow">UM PASSO DE CADA VEZ</p><h1>Seu dinheiro.<br> Sua semana.<br> Mais tranquilidade<span>.</span></h1><p>Saiba quanto você pode gastar hoje, sem perder de vista o amanhã.</p><div class="login-illustration" aria-hidden="true"><div><span>semana 1</span><i></i></div><div><span>semana 2</span><i></i></div><div><span>semana 3</span><i></i></div><div><span>semana 4</span><i></i></div></div></div>
-      <span class="login-story-footer">Pequenos registros. Grandes mudanças.</span>
-    </div>
-    <div class="login-content">
-      <div class="login-card"><p class="eyebrow">BEM-VINDO AO SEU ESPAÇO</p><h2 id="login-heading">Bom ter você por aqui.</h2><p class="login-subtitle" id="login-subtitle">Entre na sua conta para organizar a próxima semana.</p>
-        <form id="login-form">
-          <label>E-mail<input name="email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required maxlength="254"></label>
-          <label>Senha<input name="password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="6" required maxlength="128"></label>
-          <div class="login-options"><span>Seu planejamento em um só lugar.</span><button class="text-button" id="reset-password" type="button" disabled>Esqueci minha senha</button></div>
-          <button class="button primary full" id="login-submit" type="submit" disabled>Entrar na minha conta <span aria-hidden="true">↗</span></button>
-          <p id="login-status" class="login-status" role="status" aria-live="polite">Verificando sua sessão…</p><p class="form-error" role="alert"></p>
-        </form>
-        <div class="login-signup"><span id="signup-prompt">Ainda não tem uma conta?</span><button id="login-toggle" class="text-button" disabled>Criar conta</button></div>
-        <p class="login-privacy">Seu planejamento é pessoal.<br>Somente sua conta tem acesso aos seus dados.</p>
-      </div>
-      <span class="login-footer">Feito para simplificar sua vida financeira.</span>
-    </div>
-  </section>
+  <section id="login-screen" class="login" aria-labelledby="login-heading">
+    <div class="brand"><span class="brand-mark">s</span>semana</div>
+    <h1 id="login-heading">Entrar</h1>
+    <p class="muted" id="login-subtitle">Quanto você pode gastar nesta semana.</p>
+    <form id="login-form">
+      <label>E-mail<input name="email" type="email" autocomplete="username" inputmode="email" required maxlength="254"></label>
+      <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="6" required maxlength="128"></label>
+      <button class="button primary full" id="login-submit" type="submit" disabled>Entrar</button>
+      <p id="login-status" class="muted small" role="status" aria-live="polite">Verificando sua sessão…</p><p class="form-error" role="alert"></p>
+    </form>
+    <div class="login-links"><button class="link" id="reset-password" type="button" disabled>Esqueci minha senha</button><button id="login-toggle" class="link" type="button" disabled>Criar conta</button></div>  </section>
   <noscript><p class="noscript-message">Ative o JavaScript no navegador para acessar sua conta.</p></noscript>
-  <aside class="sidebar" id="app-sidebar" hidden>
-    <a class="brand" href="#overview"><span class="brand-mark">s<span>·</span></span>semana<span class="brand-dot">.</span></a>
-    <div class="workspace-label">SEU ESPAÇO FINANCEIRO</div>
-    <nav aria-label="Navegação principal">
-      <a class="nav-link active" href="#overview"><span aria-hidden="true">▦</span> Visão geral</a>
-      <a class="nav-link" href="#transactions"><span aria-hidden="true">&#x21C4;</span> <span class="nav-label-full">Movimenta&#xE7;&#xF5;es</span><span class="nav-label-short">Movimentos</span></a>
-      <a class="nav-link" href="#forecast"><span aria-hidden="true">&#x25F7;</span> Previs&#xE3;o</a>
-      <a class="nav-link" href="#settings"><span aria-hidden="true">⚙</span> Configurações</a>
-    </nav>
-    <div class="sidebar-note"><span class="note-icon">↗</span><h3>Um passo de cada vez.</h3><p>Organize a semana de hoje.<br>Cuide do seu amanhã.</p><div class="note-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
-    <div class="sidebar-bottom"><span class="avatar">V</span><div><strong>Suas finanças</strong><small id="account-label">Espaço pessoal</small></div><span class="tiny-dot"></span></div>
-  </aside>
-  <main id="overview" hidden>
-    <header class="topbar"><span class="breadcrumb">Meu espa&#xE7;o <span>/</span> <strong id="breadcrumb-title">Vis&#xE3;o geral</strong></span><div class="account-actions"><span class="storage-status"><span class="tiny-dot"></span><span id="sync-label">Salvo na sua conta</span></span><button id="logout-button" class="text-button">Sair da conta ↗</button></div></header>
-    <div class="page-content">
-      <section class="page-heading"><div><p class="eyebrow" id="today-label"></p><h1 id="page-title">Vis&#xE3;o geral</h1><p id="page-description">Seu dinheiro, organizado por semana.</p></div><button class="button primary" id="new-transaction"><span aria-hidden="true">＋</span> Nova movimentação</button></section>
-      <div class="mobile-quick-actions" role="group" aria-label="Adicionar registro"><button class="quick-expense" data-quick-type="expense"><span aria-hidden="true">&#x2212;</span> Adicionar despesa</button><button class="quick-income" data-quick-type="income"><span aria-hidden="true">+</span> Adicionar entrada</button></div>
-      <div data-page="overview">
-      <section class="welcome-strip" id="welcome-strip"><div><strong>Vamos começar pelo que você tem hoje?</strong><p>Informe seu saldo disponível. A gente cuida da divisão.</p></div><button class="button" id="initial-button">Definir meu saldo <span aria-hidden="true">↗</span></button></section>
-      <section class="summary-grid" aria-label="Resumo financeiro">
-        <article class="stat-card total-card"><div class="stat-label">Saldo total <span class="stat-icon">&#x25C8;</span></div><div class="stat-value" id="total-balance">R$ 0,00</div><div class="balance-breakdown"><div><span>Reservado at&#xE9; receber</span><strong id="reserved-balance">R$ 0,00</strong></div><div><span>Livre para gastar</span><strong id="available-balance">R$ 0,00</strong></div></div><p id="reservation-warning" class="reservation-warning" role="status" hidden></p></article>
-        <article class="stat-card"><div class="stat-label">Entradas do mês <span class="stat-icon income-icon">↙</span></div><div class="stat-value" id="month-income">R$ 0,00</div><div class="stat-foot">Tudo que entrou em <span class="current-month"></span></div></article>
-        <article class="stat-card"><div class="stat-label">Saídas do mês <span class="stat-icon expense-icon">↗</span></div><div class="stat-value" id="month-expense">R$ 0,00</div><div class="stat-foot">Tudo que saiu em <span class="current-month"></span></div></article>
-      </section>
-      <section class="budget-layout">
-        <article class="weekly-panel panel"><div class="section-heading"><div><p class="eyebrow">UM PLANO PARA O SEU SALDO</p><h2>Sua divisão semanal</h2></div><span class="subtle-pill" id="week-count">0 semanas</span></div><p class="section-description">Reservamos as contas que vencem antes do pr&#xF3;ximo recebimento. O restante &#xE9; dividido entre as semanas.</p><div id="weeks" class="weeks-grid"></div><div class="distribution-note"><span aria-hidden="true">↻</span><p>O que sobrar nesta semana será dividido igualmente entre as próximas.</p><button id="how-button" aria-label="Entender a divisão semanal">?</button></div></article>
-        <article class="payday-panel"><div class="calendar-icon" aria-hidden="true">▦</div><p class="eyebrow">PRÓXIMO RECEBIMENTO</p><h2 id="payday-label"></h2><span class="payday-count" id="payday-count"></span><div class="payday-divider"></div><p>Seu saldo está planejado<br>para chegar até aqui.</p><button id="payday-button">Ajustar data <span aria-hidden="true">↗</span></button><small>1º dia de segunda a sexta do mês.<br>Ajuste a data em caso de feriado.</small></article>
-      </section>
+
+  <main id="overview" class="app" hidden>
+    <div id="home-view">
+    <header class="topbar">
+      <div><div class="brand small"><span class="brand-mark">s</span>semana</div></div>
+      <div class="topbar-right"><span class="sync" title="Status"><i></i><span id="sync-label">Salvo</span></span><button class="icon-button" id="settings-button" aria-label="Ajustes"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button></div>
+    </header>
+
+    <button class="setup-card" id="welcome-strip" hidden><strong>Comece pelo seu saldo atual</strong><span>Informe quanto você tem hoje e quando recebe. Toque aqui.</span></button>
+
+    <section class="hero" aria-labelledby="hero-label">
+      <p class="hero-label" id="hero-label">Pode gastar esta semana</p>
+      <p class="hero-value" id="week-available">R$ 0,00</p>
+      <p class="hero-sub" id="week-range"></p>
+      <div class="hero-grid">
+        <div><span>Saldo total</span><strong id="total-balance">R$ 0,00</strong></div>
+        <div><span>Reservado</span><strong id="reserved-balance">R$ 0,00</strong></div>
+        <div><span id="payday-in">Recebe em</span><strong id="payday-label">—</strong></div>
       </div>
-      <section class="panel forecast-panel" id="forecast" data-page="forecast" aria-labelledby="forecast-title" hidden>
-        <div class="forecast-heading"><div><h2 id="forecast-title">Pr&#xF3;ximos per&#xED;odos</h2><p>Veja como seus agendamentos afetam os pr&#xF3;ximos per&#xED;odos.</p></div><div class="forecast-toggle" role="group" aria-label="Per&#xED;odo da previs&#xE3;o"><button type="button" data-forecast="weeks" aria-pressed="true">Semanas</button><button type="button" data-forecast="months" aria-pressed="false">Meses</button></div></div>
-        <p class="forecast-note">A previs&#xE3;o mostra o saldo total, incluindo reservas, e considera somente lan&#xE7;amentos agendados. Sal&#xE1;rios e outros valores n&#xE3;o registrados n&#xE3;o s&#xE3;o inclu&#xED;dos.</p>
-        <div class="forecast-list" id="forecast-periods" aria-live="polite"></div>
-      </section>
-      <section class="panel transactions-panel" id="transactions" data-page="transactions" hidden><div class="section-heading"><div><p class="eyebrow">CADA REAL TEM SUA HISTÓRIA</p><h2>Hist&#xF3;rico</h2></div><button class="text-button" id="export-button">Exportar dados <span aria-hidden="true">↓</span></button></div><div class="transaction-toolbar"><div class="filter-tabs" role="group" aria-label="Filtrar movimentações"><button class="selected" data-filter="all">Todas</button><button data-filter="income">Entradas</button><button data-filter="expense">Saídas</button></div><label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Buscar movimentação" aria-label="Buscar movimentação"></label></div><div class="table-wrap"><table><thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th class="amount-column">Valor</th><th><span class="sr-only">Ações</span></th></tr></thead><tbody id="transaction-rows"></tbody></table></div><div id="empty-state" class="empty-state"><span aria-hidden="true">⇄</span><h3>Aqui começa sua organização</h3><p>Registre uma entrada ou saída para acompanhar seu dinheiro.</p><button class="text-button" id="empty-add">Adicionar movimentação ↗</button></div><div class="table-footer"><span id="transaction-count">0 movimentações</span><span>Pequenos registros. Grandes mudanças.</span></div></section>
-      <section class="panel settings-panel" id="settings" data-page="settings" aria-labelledby="settings-heading" hidden><div class="settings-intro"><h2 id="settings-heading">Seu planejamento</h2><p>Atualize seu saldo inicial e a data do pr&#xF3;ximo recebimento.</p></div><form id="settings-form"><label>Saldo disponível ao começar (R$)<input name="balance" type="text" inputmode="decimal" required maxlength="16"></label><p class="form-hint" id="balance-hint"></p><label>Próximo recebimento<input type="date" name="payday" required></label><p class="form-hint">As semanas começam na segunda-feira. A semana atual e a última podem ser mais curtas, mas recebem uma parte igual. O salário só entra no saldo quando você registrar uma entrada.</p><button class="button primary full" type="submit">Salvar planejamento</button><p class="form-error" role="alert"></p></form><div class="settings-extra"><span class="form-hint">Salvo na sua conta.</span><label class="text-button import-label">↑ Importar backup<input type="file" id="import-input" accept="application/json,.json" hidden></label></div></section>
-      <footer class="page-footer"><span class="footer-brand">semana.</span><span>Feito para simplificar sua vida financeira.</span><span id="footer-storage">Seus dados ficam neste navegador.</span></footer>
+      <p id="reservation-warning" class="warning" role="status" hidden></p>    </section>
+
+    <section class="month" aria-label="Este mês">
+      <div><span>Ganhos em <b class="current-month"></b></span><strong class="pos" id="month-income">R$ 0,00</strong></div>
+      <div><span>Gastos em <b class="current-month"></b></span><strong class="neg" id="month-expense">R$ 0,00</strong></div>
+    </section>
+
+    <section class="block" aria-labelledby="weeks-title">
+      <h2 id="weeks-title">Próximas semanas</h2>
+      <ol id="weeks" class="weeks"></ol>
+    </section>
+
+    <section class="block" aria-labelledby="recent-title">
+      <div class="block-head"><h2 id="recent-title">Últimos lançamentos</h2><a class="see-all" href="#lancamentos" id="see-all">Ver todos <span aria-hidden="true">›</span></a></div>
+      <ul id="recent-rows" class="entries"></ul>
+      <p id="recent-empty" class="empty">Nenhum lançamento ainda. Use os botões abaixo.</p>
+    </section>
     </div>
+
+    <div id="history-view" hidden>
+      <header class="page-head">
+        <a class="icon-button back" href="#" id="back-button" aria-label="Voltar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+        <h1>Lançamentos</h1>
+      </header>
+      <div class="tools">
+        <label class="search"><span class="sr-only">Buscar</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="search" type="search" placeholder="Buscar descrição ou categoria" autocomplete="off" enterkeyhint="search"></label>
+        <div class="seg wide" role="group" aria-label="Filtrar"><button class="selected" data-filter="all">Todos</button><button data-filter="expense">Gastos</button><button data-filter="income">Ganhos</button></div>
+      </div>
+      <p class="result-sum" id="result-sum" aria-live="polite"></p>
+      <div id="transaction-rows" class="history"></div>
+      <p id="empty-state" class="empty" hidden></p>
+      <button class="button full more" id="show-more" hidden>Ver mais</button>
+    </div>
+
+    <nav class="actions" aria-label="Adicionar">
+      <button class="act expense" data-quick-type="expense"><span aria-hidden="true">−</span> Gasto</button>
+      <button class="act income" data-quick-type="income"><span aria-hidden="true">+</span> Ganho</button>
+    </nav>
   </main>
-  <dialog id="transaction-dialog"><form id="transaction-form"><div class="modal-heading"><h2 id="transaction-title">Nova movimentação</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><input name="id" type="hidden"><div class="type-picker"><label><input type="radio" name="type" value="expense" checked> ↗ Saída</label><label><input type="radio" name="type" value="income"> ↙ Entrada</label></div><label>Valor (R$)<input name="amount" type="text" inputmode="decimal" placeholder="0,00" required maxlength="16" autocomplete="off"></label><label>Descrição<input name="description" placeholder="Ex.: Mercado da semana" maxlength="100" required></label><div class="form-grid"><label>Categoria<select name="category"><option>Alimentação</option><option>Transporte</option><option>Casa</option><option>Lazer</option><option>Saúde</option><option>Salário</option><option>Outros</option></select></label><label>Data<input type="date" name="date" required></label></div><p id="transaction-date-hint" class="form-hint">Entradas redistribuem o saldo. Saídas reduzem a semana em que aconteceram.</p><button class="button primary full" type="submit">Salvar movimentação</button><p class="form-error" role="alert"></p></form></dialog>
-  <dialog id="info-dialog"><div class="modal-heading"><h2>Uma semana de cada vez</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><p>Com R$ 400 livres e quatro semanas até receber, você começa com R$ 100 por semana.</p><p>Gastou R$ 50? A semana atual fica com R$ 50 e as outras continuam com R$ 100.</p><p>Na segunda-feira seguinte, os R$ 350 que sobraram são divididos nas três semanas restantes: R$ 116,67, R$ 116,67 e R$ 116,66.</p><p>Contas at&#xE9; a v&#xE9;spera do pr&#xF3;ximo recebimento ficam reservadas. No vencimento, n&#xE3;o reduzem o limite novamente.</p><p class="form-hint">Os cálculos usam centavos inteiros. Se você ultrapassar o limite semanal, ele aparece negativo. Na próxima semana, o saldo total é redistribuído.</p></dialog>
-  <dialog id="confirm-dialog"><div class="modal-heading"><h2 id="confirm-title">Confirmar alteração</h2><button type="button" class="close-button" data-close aria-label="Fechar">×</button></div><p id="confirm-message"></p><div class="confirm-actions"><button class="button" id="confirm-cancel">Cancelar</button><button class="button primary" id="confirm-ok">Confirmar</button></div></dialog>
+
+  <dialog id="transaction-dialog" class="sheet"><form id="transaction-form">
+    <div class="sheet-head"><h2 id="transaction-title">Novo gasto</h2><button type="button" class="close" data-close aria-label="Fechar">×</button></div>
+    <input name="id" type="hidden">
+    <div class="seg type" role="radiogroup" aria-label="Tipo"><label><input type="radio" name="type" value="expense" checked><span>Gasto</span></label><label><input type="radio" name="type" value="income"><span>Ganho</span></label></div>
+    <label class="amount-field"><span class="sr-only">Valor</span><span class="currency" aria-hidden="true">R$</span><input name="amount" type="text" inputmode="numeric" placeholder="0,00" required maxlength="18" autocomplete="off" aria-label="Valor em reais"></label>
+    <label>Descrição<input name="description" placeholder="Ex.: Mercado" maxlength="100" required autocomplete="off"></label>
+    <div class="two"><label>Categoria<select name="category"><option>Alimentação</option><option>Transporte</option><option>Casa</option><option>Lazer</option><option>Saúde</option><option>Salário</option><option>Outros</option></select></label><label>Data<input type="date" name="date" required></label></div>
+    <p id="transaction-date-hint" class="hint"></p>
+    <button class="button primary full" type="submit">Salvar</button>
+    <button class="button danger full" type="button" id="delete-transaction" hidden>Excluir lançamento</button>
+    <p class="form-error" role="alert"></p>
+  </form></dialog>
+
+  <dialog id="settings-dialog" class="sheet"><form id="settings-form">
+    <div class="sheet-head"><h2>Ajustes</h2><button type="button" class="close" data-close aria-label="Fechar">×</button></div>
+    <label>Saldo inicial (R$)<input name="balance" type="text" inputmode="decimal" required maxlength="16"></label>
+    <p class="hint" id="balance-hint"></p>
+    <label>Próximo recebimento<input type="date" name="payday" required></label>
+    <p class="hint">O que sobra é dividido igualmente entre as semanas até essa data.</p>
+    <button class="button primary full" type="submit">Salvar ajustes</button>
+    <p class="form-error" role="alert"></p>
+    <div class="settings-more">
+      <span class="muted small" id="account-label"></span>
+      <div class="row-links"><button class="link" type="button" id="export-button">Exportar backup</button><label class="link">Importar backup<input type="file" id="import-input" accept="application/json,.json" hidden></label></div>
+      <button class="button full" type="button" id="logout-button">Sair da conta</button>
+    </div>
+  </form></dialog>
+
+  <dialog id="confirm-dialog" class="sheet"><div class="sheet-head"><h2 id="confirm-title">Confirmar</h2></div><p id="confirm-message" class="muted"></p><div class="two"><button class="button" id="confirm-cancel">Cancelar</button><button class="button primary" id="confirm-ok">Confirmar</button></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./app.js"></script>
 </body>
